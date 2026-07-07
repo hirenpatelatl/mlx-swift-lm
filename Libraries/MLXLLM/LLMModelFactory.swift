@@ -515,7 +515,7 @@ private struct LLMUserInputProcessor: UserInputProcessor {
 /// is required.
 ///
 /// ```swift
-/// let modelContainer = try await LLMModelFactory.shared.loadContainer(
+/// let model = try await LLMModelFactory.shared.load(
 ///     configuration: LLMRegistry.llama3_8B_4bit)
 /// ```
 public final class LLMModelFactory: GenericModelFactory {

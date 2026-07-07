@@ -23,12 +23,10 @@ func testMTPDrafterFactoryLoadFromDirectoryWhenCheckpointPresent() async throws 
     await Gemma4AssistantRegistration.register()
     let factory = MTPDrafterModelFactory.shared
 
-    let container = try await factory.loadContainer(
+    let context = try await factory.load(
         from: snapshot, using: NoOpTokenizerLoader()
     )
-    let isDrafter = await container.perform { ctx in
-        ctx.model is Gemma4AssistantDraftModel
-    }
+    let isDrafter = context.model is Gemma4AssistantDraftModel
     #expect(isDrafter)
 }
 

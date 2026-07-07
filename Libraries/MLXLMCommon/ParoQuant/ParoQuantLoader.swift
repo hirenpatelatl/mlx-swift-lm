@@ -349,7 +349,7 @@ public func loadParoQuantModel<T: TrainableLanguageModel>(
     typeRegistry: ModelTypeRegistry<T>,
     tokenizerLoader: any TokenizerLoader,
     toolCallFormat: ToolCallFormat? = nil
-) async throws -> ModelContainer {
+) async throws -> ModelContext {
     // 1. Parse config.json (flatten VLM text_config if present)
     let configURL = directory.appendingPathComponent("config.json")
     var configData = try Data(contentsOf: configURL)
@@ -493,7 +493,7 @@ public func loadParoQuantModel<T: TrainableLanguageModel>(
         configuration: config, model: model,
         processor: processor, tokenizer: tokenizer
     )
-    return ModelContainer(context: context)
+    return context
 }
 
 // MARK: - Errors

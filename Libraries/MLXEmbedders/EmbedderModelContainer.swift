@@ -3,10 +3,9 @@
 import Foundation
 import MLXLMCommon
 
-// TODO dkoski -- make the example code be synchronous?
-// TODO dkoski -- remove or deprecate this whole thing?
-
 /// Container for embedder models that guarantees single threaded access.
+///
+/// * Important: `EmbedderModelContext` is now `Sendable` and can be used directly.
 ///
 /// Wrap models used by e.g. the UI in a ModelContainer. Callers can access
 /// the model and/or tokenizer (any values from the ``EmbedderModelContext``):
@@ -29,6 +28,7 @@ import MLXLMCommon
 ///     return result.map { $0.asArray(Float.self) }
 /// }
 /// ```
+@available(*, deprecated, message: "use EmbedderModelContext instead")
 public final class EmbedderModelContainer: Sendable {
     private let context: EmbedderModelContext
 

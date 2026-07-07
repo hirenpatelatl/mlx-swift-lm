@@ -73,8 +73,7 @@ public protocol ModelConfigurationValidating {
 ///
 /// See also ``GenericModelFactory/loadContainer(from:using:configuration:useLatest:progressHandler:)`` and
 /// ``ModelContainer``.
-public struct ModelContext {
-    // TODO dkoski: should these be let?
+public struct ModelContext: Sendable {
     public var configuration: ModelConfiguration
     public var model: any LanguageModel & Sendable
     public var processor: any UserInputProcessor
@@ -107,7 +106,7 @@ public struct ModelContext {
 /// or variants.
 public protocol GenericModelFactory<ContextType, ContainerType>: Sendable {
 
-    associatedtype ContextType
+    associatedtype ContextType: Sendable
     associatedtype ContainerType: Sendable
 
     var modelRegistry: AbstractModelRegistry { get }
@@ -173,6 +172,9 @@ extension GenericModelFactory {
 
     /// Load a model from a ``Downloader`` and ``ModelConfiguration``,
     /// producing a ``ModelContainer``.
+    ///
+    /// Note: `ModelContext` is now `Sendable` and is preferred over `ModelContainer`.
+    @available(*, deprecated, message: "use load instead")
     public func loadContainer(
         from downloader: any Downloader,
         using tokenizerLoader: any TokenizerLoader,
@@ -200,6 +202,9 @@ extension GenericModelFactory {
     }
 
     /// Load a model from a local directory, producing a ``ModelContainer``.
+    ///
+    /// Note: `ModelContext` is now `Sendable` and is preferred over `ModelContainer`.
+    @available(*, deprecated, message: "use load instead")
     public func loadContainer(
         from directory: URL,
         using tokenizerLoader: any TokenizerLoader
@@ -304,6 +309,7 @@ public func loadModel(
 ///   - useLatest: when true, always checks the provider for the latest version
 ///   - progressHandler: optional callback for progress
 /// - Returns: a ``ModelContainer``
+@available(*, deprecated, message: "use loadModel instead")
 public func loadModelContainer(
     from downloader: any Downloader,
     using tokenizerLoader: any TokenizerLoader,
@@ -360,6 +366,7 @@ public func loadModel(
 ///   - useLatest: when true, always checks the provider for the latest version
 ///   - progressHandler: optional callback for progress
 /// - Returns: a ``ModelContainer``
+@available(*, deprecated, message: "use loadModel instead")
 public func loadModelContainer(
     from downloader: any Downloader,
     using tokenizerLoader: any TokenizerLoader,
@@ -403,6 +410,7 @@ public func loadModel(
 ///   - directory: directory of configuration and weights
 ///   - tokenizerLoader: the ``TokenizerLoader`` to use for loading the tokenizer
 /// - Returns: a ``ModelContainer``
+@available(*, deprecated, message: "use loadModel instead")
 public func loadModelContainer(
     from directory: URL,
     using tokenizerLoader: any TokenizerLoader

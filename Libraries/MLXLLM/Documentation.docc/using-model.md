@@ -80,18 +80,13 @@ This example shows adding some images and processing instructions -- if
 model accepts text only then these parts can be omitted. The inference
 calls are the same.
 
-Assuming you are using a `ModelContainer` (an actor that holds
-a `ModelContext`, which is the bundled set of types that implement a
-model), the first step is to convert the `UserInput` into the
+Assuming you are using a `ModelContext` (which is the bundled set of 
+types that implement a model), the first step is to convert the `UserInput` into the
 `LMInput` (LanguageModel Input):
 
 ```swift
 let generateParameters: GenerateParameters
-let input: UserInput
-
-let result = try await modelContainer.perform { [input] context in
-    let input = try context.processor.prepare(input: input)
-
+let input = try context.processor.prepare(input: input)
 ```
 
 Given that `input` we can call `generate()` to produce a stream
@@ -100,26 +95,25 @@ to assist in converting a stream of tokens into text and print it.
 The stream is stopped after we hit a maximum number of tokens:
 
 ```
-    var detokenizer = NaiveStreamingDetokenizer(tokenizer: context.tokenizer)
+var detokenizer = NaiveStreamingDetokenizer(tokenizer: context.tokenizer)
 
-    return try MLXLMCommon.generate(
-        input: input, parameters: generateParameters, context: context
-    ) { tokens in
+return try MLXLMCommon.generate(
+    input: input, parameters: generateParameters, context: context
+) { tokens in
 
-        if let last = tokens.last {
-            detokenizer.append(token: last)
-        }
+    if let last = tokens.last {
+        detokenizer.append(token: last)
+    }
 
-        if let new = detokenizer.next() {
-            print(new, terminator: "")
-            fflush(stdout)
-        }
+    if let new = detokenizer.next() {
+        print(new, terminator: "")
+        fflush(stdout)
+    }
 
-        if tokens.count >= maxTokens {
-            return .stop
-        } else {
-            return .more
-        }
+    if tokens.count >= maxTokens {
+        return .stop
+    } else {
+        return .more
     }
 }
 ```

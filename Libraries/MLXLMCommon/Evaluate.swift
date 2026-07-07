@@ -1809,7 +1809,6 @@ private func generateLoopTask<Handler: TokenLoopHandler>(
 
     let (stream, continuation) = AsyncStream<Handler.Output>.makeStream()
 
-    // TODO dkoski -- remove SendableBox
     let iterator = SendableBox(iterator)
     let handler = SendableBox(handler)
 

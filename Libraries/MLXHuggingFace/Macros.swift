@@ -76,6 +76,7 @@ public macro huggingFaceTokenizerLoader() -> MLXLMCommon.TokenizerLoader =
 ///     configuration: modelConfiguration
 /// )
 /// ```
+@available(*, deprecated, message: "use huggingFaceLoadModel instead")
 @freestanding(expression)
 public macro huggingFaceLoadModelContainer(
     configuration: ModelConfiguration
@@ -93,6 +94,7 @@ public macro huggingFaceLoadModelContainer(
 ///     configuration: modelConfiguration
 /// ) { progres in ... }
 /// ```
+@available(*, deprecated, message: "use huggingFaceLoadModel instead")
 @freestanding(expression)
 public macro huggingFaceLoadModelContainer(
     configuration: ModelConfiguration,

@@ -124,8 +124,7 @@ public class EmbedderRegistry: AbstractModelRegistry, @unchecked Sendable {
 
 /// Context of values that work together to provide an ``EmbeddingModel``.
 ///
-/// This is created using a ``EmbedderModelFactory`` and often used
-/// inside a ``EmbedderModelContainer``.
+/// This is created using a ``EmbedderModelFactory`.
 public struct EmbedderModelContext: Sendable {
     public var configuration: ModelConfiguration
     public var model: any EmbeddingModel & Sendable
