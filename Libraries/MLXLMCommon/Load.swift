@@ -12,7 +12,7 @@ import MLXNN
 /// applies optional quantization, and
 /// updates the model with the weights.
 public func loadWeights(
-    modelDirectory: URL, model: BaseLanguageModel,
+    modelDirectory: URL, model: TrainableBaseLanguageModel,
     quantization: BaseConfiguration.Quantization? = nil,
     perLayerQuantization: BaseConfiguration.PerLayerQuantization? = nil
 ) throws {

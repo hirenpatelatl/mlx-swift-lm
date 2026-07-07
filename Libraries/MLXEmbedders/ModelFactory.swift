@@ -16,7 +16,7 @@ private func create<C: Decodable, M>(
 /// Registry of model type, e.g 'bert', to functions that can instantiate the model from configuration.
 public enum EmbedderTypeRegistry {
 
-    public static let shared: ModelTypeRegistry<EmbeddingModel> = .init(creators: [
+    public static let shared: ModelTypeRegistry<TrainableEmbeddingModel> = .init(creators: [
         "bert": create(BertConfiguration.self) { BertModel($0) },
         "roberta": create(BertConfiguration.self) { BertModel($0) },
         "xlm-roberta": create(BertConfiguration.self) { BertModel($0) },
@@ -133,11 +133,21 @@ public struct EmbedderModelContext: Sendable {
     public let pooling: Pooling
 
     public init(
-        configuration: ModelConfiguration, model: some EmbeddingModel,
+        configuration: ModelConfiguration, model: some TrainableEmbeddingModel,
         tokenizer: any Tokenizer, pooling: Pooling
     ) {
         self.configuration = configuration
         self.model = MaterializedModule(model)
+        self.tokenizer = tokenizer
+        self.pooling = pooling
+    }
+
+    public init(
+        configuration: ModelConfiguration, model: some EmbeddingModel & Sendable,
+        tokenizer: any Tokenizer, pooling: Pooling
+    ) {
+        self.configuration = configuration
+        self.model = model
         self.tokenizer = tokenizer
         self.pooling = pooling
     }
@@ -163,7 +173,7 @@ public final class EmbedderModelFactory: GenericModelFactory {
     public typealias ContainerType = EmbedderModelContainer
 
     public init(
-        typeRegistry: ModelTypeRegistry<EmbeddingModel>,
+        typeRegistry: ModelTypeRegistry<TrainableEmbeddingModel>,
         modelRegistry: AbstractModelRegistry
     ) {
         self.typeRegistry = typeRegistry
@@ -175,7 +185,7 @@ public final class EmbedderModelFactory: GenericModelFactory {
         typeRegistry: EmbedderTypeRegistry.shared, modelRegistry: EmbedderRegistry.shared)
 
     /// registry of model type, e.g. configuration value `gemma3` -> configuration and init methods
-    public let typeRegistry: ModelTypeRegistry<EmbeddingModel>
+    public let typeRegistry: ModelTypeRegistry<TrainableEmbeddingModel>
 
     /// registry of model id to configuration, e.g. `sentence-transformers/all-MiniLM-L6-v2`
     public let modelRegistry: AbstractModelRegistry
@@ -204,7 +214,7 @@ public final class EmbedderModelFactory: GenericModelFactory {
                 configurationURL.lastPathComponent, configuration.name, error)
         }
 
-        let model: EmbeddingModel
+        let model: any TrainableEmbeddingModel
         do {
             model = try await typeRegistry.createModel(
                 configuration: configData, modelType: baseConfig.modelType)

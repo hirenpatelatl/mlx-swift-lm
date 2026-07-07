@@ -86,7 +86,7 @@ private func create<C: Decodable, P>(
 public enum VLMTypeRegistry {
 
     /// Shared instance with default model types.
-    public static let shared: ModelTypeRegistry<LanguageModel> = .init(creators: [
+    public static let shared: ModelTypeRegistry<TrainableLanguageModel> = .init(creators: [
         "paligemma": create(PaliGemmaConfiguration.self, PaliGemma.init),
         "qwen2_vl": create(Qwen2VLConfiguration.self, Qwen2VL.init),
         "qwen2_5_vl": create(Qwen25VLConfiguration.self, Qwen25VL.init),
@@ -310,7 +310,8 @@ public final class VLMModelFactory: GenericModelFactory {
     public typealias ContainerType = ModelContainer
 
     public init(
-        typeRegistry: ModelTypeRegistry<LanguageModel>, processorRegistry: ProcessorTypeRegistry,
+        typeRegistry: ModelTypeRegistry<TrainableLanguageModel>,
+        processorRegistry: ProcessorTypeRegistry,
         modelRegistry: AbstractModelRegistry
     ) {
         self.typeRegistry = typeRegistry
@@ -324,7 +325,7 @@ public final class VLMModelFactory: GenericModelFactory {
         modelRegistry: VLMRegistry.shared)
 
     /// registry of model type, e.g. configuration value `paligemma` -> configuration and init methods
-    public let typeRegistry: ModelTypeRegistry<LanguageModel>
+    public let typeRegistry: ModelTypeRegistry<TrainableLanguageModel>
 
     /// registry of input processor type, e.g. configuration value `PaliGemmaProcessor` -> configuration and init methods
     public let processorRegistry: ProcessorTypeRegistry
@@ -355,7 +356,7 @@ public final class VLMModelFactory: GenericModelFactory {
                 configurationURL.lastPathComponent, configuration.name, error)
         }
 
-        let model: LanguageModel
+        let model: any TrainableLanguageModel
         do {
             model = try await typeRegistry.createModel(
                 configuration: configData, modelType: baseConfig.modelType)

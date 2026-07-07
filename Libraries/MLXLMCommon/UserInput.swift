@@ -39,7 +39,7 @@ public struct UserInput {
         }
     }
 
-    public struct VideoFrame {
+    public struct VideoFrame: Sendable {
         public let frame: CIImage
         public let timeStamp: CMTime
 
@@ -50,7 +50,7 @@ public struct UserInput {
     }
 
     /// Representation of a video resource.
-    public enum Video {
+    public enum Video: Sendable {
         case avAsset(AVAsset)
         case url(URL)
         /// Useful for decoded frames held in memory
@@ -75,10 +75,10 @@ public struct UserInput {
     }
 
     /// Representation of an image resource.
-    public enum Image {
+    public enum Image: Sendable {
         case ciImage(CIImage)
         case url(URL)
-        case array(MLXArray)
+        case array(MaterializedArray)
 
         public func asCIImage() throws -> CIImage {
             switch self {
@@ -96,7 +96,7 @@ public struct UserInput {
                     throw UserInputError.arrayError("array must have 3 dimensions: \(array.ndim)")
                 }
 
-                var array = array
+                var array: MLXArray = array
 
                 // convert to 0 .. 255
                 if array.max().item(Float.self) <= 1.0 {
@@ -138,9 +138,9 @@ public struct UserInput {
     }
 
     /// Representation of an audio resource.
-    public enum Audio {
+    public enum Audio: Sendable {
         case url(URL)
-        case array(MLXArray)
+        case array(MaterializedArray)
 
         // See also UserInput+Audio
     }

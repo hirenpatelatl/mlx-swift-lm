@@ -1,6 +1,7 @@
 // Copyright © 2024 Apple Inc.
 
 import Foundation
+import MLXNN
 
 /// File patterns required to resolve a tokenizer without downloading model weights.
 package let tokenizerDownloadPatterns = ["*.json", "*.jinja"]
@@ -73,17 +74,18 @@ public protocol ModelConfigurationValidating {
 /// See also ``GenericModelFactory/loadContainer(from:using:configuration:useLatest:progressHandler:)`` and
 /// ``ModelContainer``.
 public struct ModelContext {
+    // TODO dkoski: should these be let?
     public var configuration: ModelConfiguration
-    public var model: any LanguageModel
+    public var model: any LanguageModel & Sendable
     public var processor: any UserInputProcessor
     public var tokenizer: Tokenizer
 
     public init(
-        configuration: ModelConfiguration, model: any LanguageModel,
+        configuration: ModelConfiguration, model: some TrainableLanguageModel,
         processor: any UserInputProcessor, tokenizer: any Tokenizer
     ) {
         self.configuration = configuration
-        self.model = model
+        self.model = MaterializedModule(model)
         self.processor = processor
         self.tokenizer = tokenizer
     }

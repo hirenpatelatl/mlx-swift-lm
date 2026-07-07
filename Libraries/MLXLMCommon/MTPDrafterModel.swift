@@ -59,6 +59,8 @@ public protocol MTPDrafterModel: BaseLanguageModel {
     ) -> MLXArray
 }
 
+public typealias TrainableMTPDrafterModel = MTPDrafterModel & Module
+
 /// Lightweight context for an MTP drafter — simpler than `ModelContext`
 /// because drafters have no tokenizer, no user input processor, no chat
 /// template.

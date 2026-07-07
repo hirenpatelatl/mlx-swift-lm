@@ -23,7 +23,7 @@ private func create<C: Codable, M>(
 public enum LLMTypeRegistry {
 
     /// Shared instance with default model types.
-    public static let shared: ModelTypeRegistry<LanguageModel> = .init(creators: [
+    public static let shared: ModelTypeRegistry<TrainableLanguageModel> = .init(creators: [
         "mistral": create(LlamaConfiguration.self, LlamaModel.init),
         "mixtral": create(MixtralConfiguration.self, MixtralModel.init),
         "llama": create(LlamaConfiguration.self, LlamaModel.init),
@@ -524,7 +524,8 @@ public final class LLMModelFactory: GenericModelFactory {
     public typealias ContainerType = ModelContainer
 
     public init(
-        typeRegistry: ModelTypeRegistry<LanguageModel>, modelRegistry: AbstractModelRegistry
+        typeRegistry: ModelTypeRegistry<TrainableLanguageModel>,
+        modelRegistry: AbstractModelRegistry
     ) {
         self.typeRegistry = typeRegistry
         self.modelRegistry = modelRegistry
@@ -535,7 +536,7 @@ public final class LLMModelFactory: GenericModelFactory {
         typeRegistry: LLMTypeRegistry.shared, modelRegistry: LLMRegistry.shared)
 
     /// registry of model type, e.g. configuration value `llama` -> configuration and init methods
-    public let typeRegistry: ModelTypeRegistry<LanguageModel>
+    public let typeRegistry: ModelTypeRegistry<TrainableLanguageModel>
 
     /// registry of model id to configuration, e.g. `mlx-community/Llama-3.2-3B-Instruct-4bit`
     public let modelRegistry: AbstractModelRegistry
@@ -563,7 +564,7 @@ public final class LLMModelFactory: GenericModelFactory {
                 configurationURL.lastPathComponent, configuration.name, error)
         }
 
-        let model: LanguageModel
+        let model: any TrainableLanguageModel
         do {
             model = try await typeRegistry.createModel(
                 configuration: configData, modelType: baseConfig.modelType)

@@ -344,7 +344,7 @@ private struct ParoQuantInputProcessor: UserInputProcessor {
 ///   - tokenizerLoader: Loader for tokenizer.
 ///   - toolCallFormat: Optional tool-call format for the model configuration.
 /// - Returns: A ``ModelContainer`` ready for inference.
-public func loadParoQuantModel<T: LanguageModel>(
+public func loadParoQuantModel<T: TrainableLanguageModel>(
     from directory: URL,
     typeRegistry: ModelTypeRegistry<T>,
     tokenizerLoader: any TokenizerLoader,

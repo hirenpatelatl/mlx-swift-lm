@@ -67,6 +67,8 @@ package final class SerialAccessContainer<T>: @unchecked Sendable {
 
 }
 
+// TODO dkoski update the comment.  maybe remove the type?
+
 /// Internal box to wrap non-Sendable data to be transferred across
 /// task boundaries.
 ///

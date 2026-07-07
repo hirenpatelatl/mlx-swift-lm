@@ -4,6 +4,7 @@ import Foundation
 import MLX
 import MLXNN
 
+// TODO dkoski -- remove this whole thing? or at least deprecate?
 /// Container for models that guarantees single threaded access.
 ///
 /// Wrap models used by e.g. the UI in a ModelContainer. Callers can access
@@ -30,11 +31,24 @@ import MLXNN
 /// }
 /// ```
 public final class ModelContainer: Sendable {
+    // TODO dkoski remove container?
     private let context: SerialAccessContainer<ModelContext>
+
+    public var ModelContext: ModelContext {
+        get async {
+            await context.read { $0 }
+        }
+    }
 
     public var configuration: ModelConfiguration {
         get async {
             await context.read { $0.configuration }
+        }
+    }
+
+    public var model: any LanguageModel & Sendable {
+        get async {
+            await context.read { $0.model }
         }
     }
 
@@ -118,6 +132,8 @@ public final class ModelContainer: Sendable {
         }
     }
 
+    // TODO dkoski: this is unsafe, remove?  deprecate?
+
     /// Update the owned `ModelContext`.
     /// - Parameter action: update action
     public func update(_ action: @Sendable (inout ModelContext) -> Void) async {
@@ -186,6 +202,7 @@ public final class ModelContainer: Sendable {
         parameters: GenerateParameters,
         wiredMemoryTicket: WiredMemoryTicket? = nil
     ) async throws -> AsyncStream<Generation> {
+        // TODO dkoski: remove SendableBox
         let input = SendableBox(input)
 
         // Note: this is only visiting the model exclusively

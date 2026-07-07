@@ -153,6 +153,7 @@ public final class ChatSession {
     private let model: ModelContainer
     public var instructions: String?
     private let cache: SerialAccessContainer<Cache>
+    // TODO dkoski remove
     private let loadedDraftModel: SerialAccessContainer<ModelContainer?>
     public var processing: UserInput.Processing
     public var generateParameters: GenerateParameters
@@ -565,14 +566,10 @@ public final class ChatSession {
     }
 
     private func streamMap<R: Sendable>(
-        messages: consuming [Chat.Message],
+        messages inputMessages: [Chat.Message],
         transform: @Sendable @escaping (Generation) -> R?
     ) -> AsyncThrowingStream<R, Error> {
         let (stream, continuation) = AsyncThrowingStream<R, Error>.makeStream()
-
-        // images and videos are not Sendable (MLXArray) but they are consumed
-        // and are only being sent to the inner async
-        let inputMessages = SendableBox<[Chat.Message]>(messages)
 
         let task = Task {
             [
@@ -593,6 +590,7 @@ public final class ChatSession {
                         messages.append(.system(instructions))
                     }
 
+                    // TODO dkoski update comment
                     // prepare the cache, if needed.  note:
                     // this is using the LanguageModel (not Sendable) outside
                     // the protective lock.  Assuming the weights are not
@@ -606,6 +604,7 @@ public final class ChatSession {
                     // are distinct.  In particular the KVCache cannot
                     // be shared and that is the lock that is held here.
 
+                    // TODO dkoski remove box
                     let model = await model.perform { context in
                         SendableBox(context.model)
                     }.consume()
@@ -629,7 +628,7 @@ public final class ChatSession {
                     }
 
                     // prepare the input
-                    messages.append(contentsOf: inputMessages.consume())
+                    messages.append(contentsOf: inputMessages)
 
                     // loop can restart on tool calls
                     restart: while !messages.isEmpty {
@@ -691,6 +690,7 @@ public final class ChatSession {
                                     draftContainer = try await speculativeDecoding.loadDraftModel()
                                 }
 
+                                // TODO dkoski remove box
                                 // Extract the draft model from its container (same pattern as the main model).
                                 let draftModel = await draftContainer.perform { context in
                                     SendableBox(context.model)

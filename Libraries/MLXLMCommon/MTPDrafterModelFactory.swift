@@ -17,7 +17,7 @@ import MLX
 public enum MTPDrafterTypeRegistry {
     /// Shared registry. Empty until a downstream module registers a drafter
     /// type via `await MTPDrafterTypeRegistry.shared.registerModelType(...)`.
-    public static let shared: ModelTypeRegistry<any MTPDrafterModel> = .init()
+    public static let shared: ModelTypeRegistry<any TrainableMTPDrafterModel> = .init()
 }
 
 /// Registry of model id (e.g. `"mlx-community/gemma-4-31B-it-assistant-bf16"`)
@@ -51,11 +51,11 @@ public final class MTPDrafterModelFactory: GenericModelFactory {
         modelRegistry: MTPDrafterRegistry.shared
     )
 
-    public let typeRegistry: ModelTypeRegistry<any MTPDrafterModel>
+    public let typeRegistry: ModelTypeRegistry<any TrainableMTPDrafterModel>
     public let modelRegistry: AbstractModelRegistry
 
     public init(
-        typeRegistry: ModelTypeRegistry<any MTPDrafterModel>,
+        typeRegistry: ModelTypeRegistry<any TrainableMTPDrafterModel>,
         modelRegistry: AbstractModelRegistry
     ) {
         self.typeRegistry = typeRegistry
@@ -83,7 +83,7 @@ public final class MTPDrafterModelFactory: GenericModelFactory {
                 configurationURL.lastPathComponent, configuration.name, error)
         }
 
-        let model: any MTPDrafterModel
+        let model: any TrainableMTPDrafterModel
         do {
             model = try await typeRegistry.createModel(
                 configuration: configData, modelType: baseConfig.modelType)

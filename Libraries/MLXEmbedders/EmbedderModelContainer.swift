@@ -4,6 +4,7 @@ import Foundation
 import MLXLMCommon
 
 // TODO dkoski -- make the example code be synchronous?
+// TODO dkoski -- remove or deprecate this whole thing?
 
 /// Container for embedder models that guarantees single threaded access.
 ///
@@ -84,8 +85,7 @@ public final class EmbedderModelContainer: Sendable {
         nonSendable values: consuming V,
         _ action: @Sendable (EmbedderModelContext, V) async throws -> R
     ) async rethrows -> sending R {
-        let values = SendableBox(values)
-        return try await action(context, values.consume())
+        try await action(context, values)
     }
 
     /// Update the owned `EmbedderModelContext`.
