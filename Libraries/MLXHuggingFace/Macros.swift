@@ -153,7 +153,7 @@ public macro huggingFaceLoadTrainabledModel(
     configuration: ModelConfiguration,
     progressHandler: @Sendable @escaping (Progress) -> Void
 ) -> TrainableModelContext =
-    #externalMacro(module: "MLXHuggingFaceMacros", type: "LoadContextMacro")
+    #externalMacro(module: "MLXHuggingFaceMacros", type: "LoadTrainableContextMacro")
 
 public enum HuggingFaceDownloaderError: LocalizedError {
     case invalidRepositoryID(String)

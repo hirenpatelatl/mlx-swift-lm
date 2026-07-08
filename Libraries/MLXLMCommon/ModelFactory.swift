@@ -458,6 +458,7 @@ public func loadModel(
     }
 }
 
+// TODO dkoski
 /// Load a model from a local directory of configuration and weights.
 ///
 /// Returns a ``TrainableModelContext`` holding the model and tokenizer
@@ -476,6 +477,36 @@ public func loadTrainable(
             from: LocalDownloader(url: directory),
             using: tokenizerLoader,
             configuration: .init(directory: directory))
+    }
+}
+
+// TODO dkoski
+/// Load a model given a model identifier, downloading via a ``Downloader``.
+///
+/// Returns a ``TrainableModelContext`` holding the model and tokenizer
+/// in a non-Sendable context (suitable for training).
+///
+/// - Parameters:
+///   - downloader: the ``Downloader`` to use for fetching remote resources
+///   - tokenizerLoader: the ``TokenizerLoader`` to use for loading the tokenizer
+///   - id: model identifier, e.g "mlx-community/Qwen3-4B-4bit"
+///   - revision: revision to download (defaults to "main")
+///   - useLatest: when true, always checks the provider for the latest version
+///   - progressHandler: optional callback for progress
+/// - Returns: a ``TrainableModelContext``
+public func loadTrainable(
+    from downloader: any Downloader,
+    using tokenizerLoader: any TokenizerLoader,
+    id: String,
+    revision: String = "main",
+    useLatest: Bool = false,
+    progressHandler: @Sendable @escaping (Progress) -> Void = { _ in }
+) async throws -> sending TrainableModelContext {
+    try await load {
+        try await $0.loadTrainable(
+            from: downloader, using: tokenizerLoader,
+            configuration: .init(id: id, revision: revision),
+            useLatest: useLatest, progressHandler: progressHandler)
     }
 }
 
