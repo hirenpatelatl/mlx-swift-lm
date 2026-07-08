@@ -497,15 +497,14 @@ public func loadTrainable(
 public func loadTrainable(
     from downloader: any Downloader,
     using tokenizerLoader: any TokenizerLoader,
-    id: String,
-    revision: String = "main",
+    configuration: ModelConfiguration,
     useLatest: Bool = false,
     progressHandler: @Sendable @escaping (Progress) -> Void = { _ in }
 ) async throws -> sending TrainableModelContext {
     try await load {
         try await $0.loadTrainable(
             from: downloader, using: tokenizerLoader,
-            configuration: .init(id: id, revision: revision),
+            configuration: configuration,
             useLatest: useLatest, progressHandler: progressHandler)
     }
 }

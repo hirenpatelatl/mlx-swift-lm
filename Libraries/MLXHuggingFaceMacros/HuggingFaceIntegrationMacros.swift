@@ -166,14 +166,16 @@ public struct LoadContainerMacro: ExpressionMacro {
                 "#huggingFaceLoadModelContainer requires a configuration")
         }
 
-        let progress =
-            if let expr = node.arguments.first(where: { $0.label?.text == "progressHandler" })?
-                .expression
-            {
-                expr.description
-            } else {
-                "{ _ in }"
-            }
+        let progress: String
+        if let expr = node.arguments.first(where: { $0.label?.text == "progressHandler" })?
+            .expression
+        {
+            progress = expr.description
+        } else if let trailingClosure = node.trailingClosure {
+            progress = trailingClosure.description
+        } else {
+            progress = "{ _ in }"
+        }
 
         return
             """
@@ -195,14 +197,16 @@ public struct LoadContextMacro: ExpressionMacro {
             throw MacroExpansionError.message("#huggingFaceLoadModel requires a configuration")
         }
 
-        let progress =
-            if let expr = node.arguments.first(where: { $0.label?.text == "progressHandler" })?
-                .expression
-            {
-                expr.description
-            } else {
-                "{ _ in }"
-            }
+        let progress: String
+        if let expr = node.arguments.first(where: { $0.label?.text == "progressHandler" })?
+            .expression
+        {
+            progress = expr.description
+        } else if let trailingClosure = node.trailingClosure {
+            progress = trailingClosure.description
+        } else {
+            progress = "{ _ in }"
+        }
 
         return
             """
@@ -225,14 +229,16 @@ public struct LoadTrainableContextMacro: ExpressionMacro {
                 "#huggingFaceLoadTrainabledModel requires a configuration")
         }
 
-        let progress =
-            if let expr = node.arguments.first(where: { $0.label?.text == "progressHandler" })?
-                .expression
-            {
-                expr.description
-            } else {
-                "{ _ in }"
-            }
+        let progress: String
+        if let expr = node.arguments.first(where: { $0.label?.text == "progressHandler" })?
+            .expression
+        {
+            progress = expr.description
+        } else if let trailingClosure = node.trailingClosure {
+            progress = trailingClosure.description
+        } else {
+            progress = "{ _ in }"
+        }
 
         return
             """
