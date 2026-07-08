@@ -5,7 +5,11 @@ import MLX
 @_spi(MaterializedModule) import MLXNN
 
 /// Abstract form of a model that processes language.
-public protocol BaseLanguageModel: ModuleInference {
+public protocol BaseLanguageModel {
+
+    /// Sum of all the `nbytes` of the parameters in the encapsulated model.
+    var parameterNBytes: Int { get }
+
     /// Optionally preprocess the weights and modify / remove values as needed.
     func sanitize(weights: [String: MLXArray]) -> [String: MLXArray]
 
@@ -34,6 +38,12 @@ extension BaseLanguageModel {
         MLXArray]
     {
         sanitize(weights: weights)
+    }
+}
+
+extension BaseLanguageModel where Self: Module {
+    public var parameterNBytes: Int {
+        parameters().reduce(0) { $0 + $1.nbytes }
     }
 }
 

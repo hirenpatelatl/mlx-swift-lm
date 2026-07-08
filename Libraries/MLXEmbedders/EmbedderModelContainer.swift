@@ -29,8 +29,21 @@ import MLXLMCommon
 /// }
 /// ```
 @available(*, deprecated, message: "use EmbedderModelContext instead")
-public final class EmbedderModelContainer: Sendable {
-    private let context: EmbedderModelContext
+public final class EmbedderModelContainer: @unchecked (Sendable) {
+    private var _context: EmbedderModelContext
+    private let lock = NSLock()
+    private var context: EmbedderModelContext {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return _context
+        }
+        set {
+            lock.lock()
+            defer { lock.unlock() }
+            _context = newValue
+        }
+    }
 
     public var configuration: ModelConfiguration {
         context.configuration
@@ -45,7 +58,7 @@ public final class EmbedderModelContainer: Sendable {
     }
 
     public init(context: consuming EmbedderModelContext) {
-        self.context = context
+        self._context = context
     }
 
     /// Perform an action on the ``EmbedderModelContext``.
@@ -91,11 +104,11 @@ public final class EmbedderModelContainer: Sendable {
     /// Update the owned `EmbedderModelContext`.
     /// - Parameter action: update action
     @available(
-        *, unavailable,
+        *, deprecated,
         message: "mutate EmbedderModelContext before passing to EmbedderModelContainer"
     )
     public func update(_ action: @Sendable (inout EmbedderModelContext) -> Void) async {
-        fatalError("update not supported")
+        action(&context)
     }
 
     // MARK: - Thread-safe convenience methods
@@ -114,3 +127,5 @@ public final class EmbedderModelContainer: Sendable {
         }
     }
 }
+
+public typealias EmbedderModelContainerConstraint = EmbedderModelContainer

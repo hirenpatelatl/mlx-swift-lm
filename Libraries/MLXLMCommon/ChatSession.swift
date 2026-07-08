@@ -176,6 +176,7 @@ public final class ChatSession {
     ///   - tools: optional tool specifications
     ///   - toolDispatch: optional tool dispatch -- required for toolcalls if streaming strings rather than details
     ///   - additionalContext: optional model-specific context
+    @available(*, deprecated, message: "use ModelContext variant instead")
     public init(
         _ model: ModelContainer,
         instructions: String? = nil,
@@ -245,6 +246,7 @@ public final class ChatSession {
     ///   - tools: optional tool specifications
     ///   - toolDispatch: optional tool dispatch -- required for toolcalls if streaming strings rather than details
     ///   - additionalContext: optional model-specific context
+    @available(*, deprecated, message: "use ModelContext variant instead")
     public init(
         _ model: ModelContainer,
         instructions: String? = nil,
@@ -328,6 +330,7 @@ public final class ChatSession {
     ///   - tools: optional tool specifications
     ///   - toolDispatch: optional tool dispatch -- required for toolcalls if streaming strings rather than details
     ///   - additionalContext: optional model-specific context
+    @available(*, deprecated, message: "use ModelContext variant instead")
     public init(
         _ model: ModelContainer,
         instructions: String? = nil,
@@ -646,9 +649,7 @@ public final class ChatSession {
                                     speculativeDecoding.estimatedDraftModelBytes
                             {
                                 let memoryEvaluation = memoryPolicy.evaluate(
-                                    mainModelBytes:
-                                        SpeculativeDecodingMemoryPolicy
-                                        .modelWeightBytes(model),
+                                    mainModelBytes: model.parameterNBytes,
                                     draftModelBytes: draftModelBytes
                                 )
                                 if !memoryEvaluation.shouldUseSpeculativeDecoding {

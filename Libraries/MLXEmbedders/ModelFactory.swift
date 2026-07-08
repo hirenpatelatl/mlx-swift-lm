@@ -169,7 +169,7 @@ public struct EmbedderModelContext: Sendable {
 public final class EmbedderModelFactory: GenericModelFactory {
 
     public typealias ContextType = EmbedderModelContext
-    public typealias ContainerType = EmbedderModelContainer
+    public typealias ContainerType = EmbedderModelContainerConstraint
 
     public init(
         typeRegistry: ModelTypeRegistry<TrainableEmbeddingModel>,
@@ -254,7 +254,7 @@ public final class EmbedderModelFactory: GenericModelFactory {
         )
     }
 
-    public func _wrap(_ context: EmbedderModelContext) -> EmbedderModelContainer {
+    public func _wrap(_ context: EmbedderModelContext) -> EmbedderModelContainerConstraint {
         .init(context: context)
     }
 }

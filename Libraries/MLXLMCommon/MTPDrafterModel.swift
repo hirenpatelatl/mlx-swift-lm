@@ -4,8 +4,6 @@ import Foundation
 import MLX
 @_spi(MaterializedModule) import MLXNN
 
-// TODO dkoski -- do the Sendable dance
-
 /// Protocol for Multi-Token Prediction (MTP) speculative drafter models.
 ///
 /// Mirrors `EmbeddingModel`'s relationship to `BaseLanguageModel`: this
@@ -122,6 +120,8 @@ public final class MTPDrafterContainer: Sendable {
         }
     }
 }
+
+public typealias MTPDrafterContainerConstraint = MTPDrafterContainer
 
 // MARK: - Cross-model state keys
 //

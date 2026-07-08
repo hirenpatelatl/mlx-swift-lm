@@ -4,7 +4,6 @@ import Foundation
 import MLX
 import MLXNN
 
-// TODO dkoski -- remove this whole thing? or at least deprecate?
 /// Container for models that guarantees single threaded access.
 ///
 /// * Important: `ModelContext` is now `Sendable` that can be used directly.
@@ -33,8 +32,22 @@ import MLXNN
 /// }
 /// ```
 @available(*, deprecated, message: "use ModelContext instead")
-public final class ModelContainer: Sendable {
-    private let context: ModelContext
+public final class ModelContainer: @unchecked (Sendable) {
+
+    private var _context: ModelContext
+    private let lock = NSLock()
+    private var context: ModelContext {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return _context
+        }
+        set {
+            lock.lock()
+            defer { lock.unlock() }
+            _context = newValue
+        }
+    }
 
     public var modelContext: ModelContext { context }
 
@@ -47,7 +60,7 @@ public final class ModelContainer: Sendable {
     public var tokenizer: Tokenizer { context.tokenizer }
 
     public init(context: ModelContext) {
-        self.context = context
+        self._context = context
     }
 
     /// Perform an action on the model and/or tokenizer. Callers _must_ eval any `MLXArray` before returning as
@@ -101,10 +114,10 @@ public final class ModelContainer: Sendable {
     /// Update the owned `ModelContext`.
     /// - Parameter action: update action
     @available(
-        *, unavailable, message: "ModelContext is now Sendable -- hold that and mutate as needed"
+        *, deprecated, message: "ModelContext is now Sendable -- hold that and mutate as needed"
     )
     public func update(_ action: @Sendable (inout ModelContext) -> Void) async {
-        fatalError("unavailable")
+        action(&context)
     }
 
     // MARK: - Thread-safe convenience methods
@@ -204,3 +217,6 @@ public final class ModelContainer: Sendable {
         return try tokenizer.applyChatTemplate(messages: messages)
     }
 }
+
+/// For internal implementation we declare a non-deprecated typealias that can be used e.g. for type parameters
+public typealias ModelContainerConstraint = ModelContainer

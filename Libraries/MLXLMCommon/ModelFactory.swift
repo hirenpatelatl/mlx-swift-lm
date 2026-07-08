@@ -216,16 +216,17 @@ extension GenericModelFactory {
 
 }
 
-extension GenericModelFactory where ContextType == ModelContext, ContainerType == ModelContainer {
+extension GenericModelFactory
+where ContextType == ModelContext, ContainerType == ModelContainerConstraint {
 
-    public func _wrap(_ context: ModelContext) -> ModelContainer {
+    public func _wrap(_ context: ModelContext) -> ModelContainerConstraint {
         .init(context: context)
     }
 
 }
 
 /// For backward compatibility: `ModelFactory` refers to an LLM/VLM model factory.
-public typealias ModelFactory = GenericModelFactory<ModelContext, ModelContainer>
+public typealias ModelFactory = GenericModelFactory<ModelContext, ModelContainerConstraint>
 
 /// Resolve a ``ModelConfiguration`` into a ``ResolvedModelConfiguration`` by
 /// downloading remote sources via a ``Downloader``.
@@ -467,7 +468,7 @@ private func load<R>(loader: (any ModelFactory) async throws -> sending R) async
 /// ## See Also
 /// - ``ModelFactoryRegistry``
 public protocol ModelFactoryTrampoline {
-    static func modelFactory() -> (any GenericModelFactory<ModelContext, ModelContainer>)?
+    static func modelFactory() -> (any GenericModelFactory<ModelContext, ModelContainerConstraint>)?
 }
 
 /// Registry of ``ModelFactory`` trampolines.
