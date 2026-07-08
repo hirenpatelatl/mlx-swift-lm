@@ -11,6 +11,7 @@ struct Macros: CompilerPlugin {
         TokenizerLoaderMacro.self,
         LoadContainerMacro.self,
         LoadContextMacro.self,
+        LoadTrainableContextMacro.self,
     ]
 }
 
