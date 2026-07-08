@@ -88,6 +88,34 @@ public struct ModelContext: Sendable {
         self.processor = processor
         self.tokenizer = tokenizer
     }
+
+    public init(_ context: consuming TrainableModelContext) {
+        self.configuration = context.configuration
+        func makeModel<T: TrainableLanguageModel>(_ m: consuming T) -> any LanguageModel & Sendable
+        {
+            MaterializedModule(m)
+        }
+        self.model = makeModel(context.model)
+        self.processor = context.processor
+        self.tokenizer = context.tokenizer
+    }
+}
+
+public struct TrainableModelContext {
+    public var configuration: ModelConfiguration
+    public var model: any TrainableLanguageModel
+    public var processor: any UserInputProcessor
+    public var tokenizer: Tokenizer
+
+    public init(
+        configuration: ModelConfiguration, model: some TrainableLanguageModel,
+        processor: any UserInputProcessor, tokenizer: any Tokenizer
+    ) {
+        self.configuration = configuration
+        self.model = model
+        self.processor = processor
+        self.tokenizer = tokenizer
+    }
 }
 
 /// Protocol for code that can load models.

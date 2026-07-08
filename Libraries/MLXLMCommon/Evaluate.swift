@@ -1210,7 +1210,7 @@ private func runSynchronousGenerationLoop(
 ///   - extraEOSTokens: any additional stop tokens
 ///   - didGenerate: visitor for the tokens as they are generated
 @available(
-    *, deprecated,
+    *, unavailable,
     message:
         "Use the AsyncStream-based generate(input:cache:parameters:context:) instead for better Swift concurrency support"
 )
