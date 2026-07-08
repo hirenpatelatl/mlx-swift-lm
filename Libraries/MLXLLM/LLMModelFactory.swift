@@ -518,7 +518,7 @@ private struct LLMUserInputProcessor: UserInputProcessor {
 /// let model = try await LLMModelFactory.shared.load(
 ///     configuration: LLMRegistry.llama3_8B_4bit)
 /// ```
-public final class LLMModelFactory: GenericModelFactory {
+public final class LLMModelFactory: GenericModelFactory, TrainableModelContextLoader {
 
     public typealias ContextType = ModelContext
     public typealias ContainerType = ModelContainerConstraint

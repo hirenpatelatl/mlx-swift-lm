@@ -253,8 +253,35 @@ where ContextType == ModelContext, ContainerType == ModelContainerConstraint {
 
 }
 
+public protocol TrainableModelContextLoader {
+
+    func loadTrainable(
+        from downloader: any Downloader,
+        using tokenizerLoader: any TokenizerLoader,
+        configuration: ModelConfiguration,
+        useLatest: Bool,
+        progressHandler: @Sendable @escaping (Progress) -> Void
+    ) async throws -> sending TrainableModelContext
+}
+
+extension TrainableModelContextLoader {
+
+    public func loadTrainable(
+        from downloader: any Downloader,
+        using tokenizerLoader: any TokenizerLoader,
+        configuration: ModelConfiguration,
+        useLatest: Bool = false,
+        progressHandler: @Sendable @escaping (Progress) -> Void = { _ in }
+    ) async throws -> sending TrainableModelContext {
+        try await loadTrainable(
+            from: downloader, using: tokenizerLoader, configuration: configuration,
+            useLatest: useLatest, progressHandler: progressHandler)
+    }
+}
+
 /// For backward compatibility: `ModelFactory` refers to an LLM/VLM model factory.
 public typealias ModelFactory = GenericModelFactory<ModelContext, ModelContainerConstraint>
+    & TrainableModelContextLoader
 
 /// Resolve a ``ModelConfiguration`` into a ``ResolvedModelConfiguration`` by
 /// downloading remote sources via a ``Downloader``.
@@ -496,7 +523,7 @@ private func load<R>(loader: (any ModelFactory) async throws -> sending R) async
 /// ## See Also
 /// - ``ModelFactoryRegistry``
 public protocol ModelFactoryTrampoline {
-    static func modelFactory() -> (any GenericModelFactory<ModelContext, ModelContainerConstraint>)?
+    static func modelFactory() -> (any ModelFactory)?
 }
 
 /// Registry of ``ModelFactory`` trampolines.

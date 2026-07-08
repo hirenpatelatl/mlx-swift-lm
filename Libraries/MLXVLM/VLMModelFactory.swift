@@ -304,7 +304,7 @@ public typealias ModelRegistry = VLMRegistry
 /// let modelContainer = try await VLMModelFactory.shared.loadContainer(
 ///     configuration: VLMRegistry.paligemma3bMix4488bit)
 /// ```
-public final class VLMModelFactory: GenericModelFactory {
+public final class VLMModelFactory: GenericModelFactory, TrainableModelContextLoader {
 
     public typealias ContextType = ModelContext
     public typealias ContainerType = ModelContainerConstraint
@@ -333,10 +333,37 @@ public final class VLMModelFactory: GenericModelFactory {
     /// registry of model id to configuration, e.g. `mlx-community/paligemma-3b-mix-448-8bit`
     public let modelRegistry: AbstractModelRegistry
 
+    // TODO dkoski
+    /// Load a model from a ``Downloader`` and ``ModelConfiguration``,
+    /// producing a ``ModelContainer``.
+    ///
+    /// Note: `ModelContext` is now `Sendable` and is preferred over `ModelContainer`.
+    public func loadTrainable(
+        from downloader: any Downloader,
+        using tokenizerLoader: any TokenizerLoader,
+        configuration: ModelConfiguration,
+        useLatest: Bool = false,
+        progressHandler: @Sendable @escaping (Progress) -> Void = { _ in }
+    ) async throws -> sending TrainableModelContext {
+        let resolved = try await resolve(
+            configuration: configuration, from: downloader,
+            useLatest: useLatest, progressHandler: progressHandler)
+        return try await _loadTrainable(configuration: resolved, tokenizerLoader: tokenizerLoader)
+    }
+
     public func _load(
         configuration: ResolvedModelConfiguration,
         tokenizerLoader: any TokenizerLoader
-    ) async throws -> sending ModelContext {
+    ) async throws -> ModelContext {
+        let trainable = try await _loadTrainable(
+            configuration: configuration, tokenizerLoader: tokenizerLoader)
+        return ModelContext(trainable)
+    }
+
+    private func _loadTrainable(
+        configuration: ResolvedModelConfiguration,
+        tokenizerLoader: any TokenizerLoader
+    ) async throws -> TrainableModelContext {
         let modelDirectory = configuration.modelDirectory
 
         // Load config.json once and decode for both base config and model-specific config
