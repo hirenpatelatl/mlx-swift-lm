@@ -277,6 +277,7 @@ extension TrainableModelContextLoader {
             from: downloader, using: tokenizerLoader, configuration: configuration,
             useLatest: useLatest, progressHandler: progressHandler)
     }
+
 }
 
 /// For backward compatibility: `ModelFactory` refers to an LLM/VLM model factory.
@@ -441,8 +442,8 @@ public func loadModelContainer(
 
 /// Load a model from a local directory of configuration and weights.
 ///
-/// Returns a ``ModelContext`` holding the model and tokenizer without
-/// an `actor` providing an isolation context.
+/// Returns a ``ModelContext`` holding the model and tokenizer
+/// in a Sendable context.
 ///
 /// - Parameters:
 ///   - directory: directory of configuration and weights
@@ -454,6 +455,27 @@ public func loadModel(
 ) async throws -> sending ModelContext {
     try await load {
         try await $0.load(from: directory, using: tokenizerLoader)
+    }
+}
+
+/// Load a model from a local directory of configuration and weights.
+///
+/// Returns a ``TrainableModelContext`` holding the model and tokenizer
+/// in a non-Sendable context (suitable for training).
+///
+/// - Parameters:
+///   - directory: directory of configuration and weights
+///   - tokenizerLoader: the ``TokenizerLoader`` to use for loading the tokenizer
+/// - Returns: a ``TrainableModelContext``
+public func loadTrainable(
+    from directory: URL,
+    using tokenizerLoader: any TokenizerLoader
+) async throws -> sending TrainableModelContext {
+    try await load {
+        try await $0.loadTrainable(
+            from: LocalDownloader(url: directory),
+            using: tokenizerLoader,
+            configuration: .init(directory: directory))
     }
 }
 

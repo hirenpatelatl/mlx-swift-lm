@@ -137,6 +137,24 @@ public macro huggingFaceLoadModel(
 ) -> ModelContext =
     #externalMacro(module: "MLXHuggingFaceMacros", type: "LoadContextMacro")
 
+/// Load a `TrainableModelContext` using default hub client and tokenizer loader with progress.
+///
+/// ```swift
+/// import MLXHuggingFace
+/// import HuggingFace
+/// import Tokenizers
+///
+/// let modelContext = try await huggingFaceLoadTrainabledModel(
+///     configuration: modelConfiguration
+/// ) { progres in ... }
+/// ```
+@freestanding(expression)
+public macro huggingFaceLoadTrainabledModel(
+    configuration: ModelConfiguration,
+    progressHandler: @Sendable @escaping (Progress) -> Void
+) -> TrainableModelContext =
+    #externalMacro(module: "MLXHuggingFaceMacros", type: "LoadContextMacro")
+
 public enum HuggingFaceDownloaderError: LocalizedError {
     case invalidRepositoryID(String)
 

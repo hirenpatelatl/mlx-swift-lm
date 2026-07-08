@@ -214,6 +214,35 @@ public struct LoadContextMacro: ExpressionMacro {
     }
 }
 
+public struct LoadTrainableContextMacro: ExpressionMacro {
+    public static func expansion(
+        of node: some FreestandingMacroExpansionSyntax,
+        in context: some MacroExpansionContext
+    ) throws -> ExprSyntax {
+        guard let configuration = node.arguments.first?.expression else {
+            throw MacroExpansionError.message("#huggingFaceLoadModel requires a configuration")
+        }
+
+        let progress =
+            if let expr = node.arguments.first(where: { $0.label?.text == "progressHandler" })?
+                .expression
+            {
+                expr.description
+            } else {
+                "{ _ in }"
+            }
+
+        return
+            """
+            loadTrainable(
+                from: #hubDownloader(),
+                using: #huggingFaceTokenizerLoader(),
+                configuration: \(configuration),
+                progressHandler: \(raw: progress))
+            """
+    }
+}
+
 enum MacroExpansionError: Error, CustomStringConvertible {
     case message(String)
 
