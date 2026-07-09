@@ -114,7 +114,7 @@ let modelFactory: ModelFactory
 // e.g. VLMRegistry.paligemma3bMix4488bit
 let modelConfiguration: ModelConfiguration
 
-let context = try await modelFactory.loadModel(
+let context = try await modelFactory.load(
     from: HubClient.default,
     using: TokenizersLoader(),
     configuration: modelConfiguration
@@ -122,7 +122,7 @@ let context = try await modelFactory.loadModel(
 
 // Custom Hub client (token, endpoint, etc.).
 let customHub = HubClient(token: "hf_...")
-let privateContext = try await modelFactory.loadModel(
+let privateContext = try await modelFactory.load(
     from: customHub,
     using: TokenizersLoader(),
     configuration: modelConfiguration

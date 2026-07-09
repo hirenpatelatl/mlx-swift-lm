@@ -7,7 +7,7 @@ import MLXLMCommon
 /// import MLXHuggingFace
 /// import HuggingFace
 ///
-/// let model = try await loadModelContainer(
+/// let model = try await loadModel(
 ///     from: #hubDownloader(HubClient()),
 ///     using: #huggingFaceTokenizerLoader(),
 ///     configuration: modelConfiguration
@@ -23,7 +23,7 @@ public macro hubDownloader(_ hub: Any) -> MLXLMCommon.Downloader =
 /// import MLXHuggingFace
 /// import HuggingFace
 ///
-/// let model = try await loadModelContainer(
+/// let model = try await loadModel(
 ///     from: #hubDownloader(),
 ///     using: #huggingFaceTokenizerLoader(),
 ///     configuration: modelConfiguration
@@ -55,7 +55,7 @@ public macro adaptHuggingFaceTokenizer(_ upstream: Any) -> MLXLMCommon.Tokenizer
 /// import MLXHuggingFace
 /// import HuggingFace
 ///
-/// let model = try await loadModelContainer(
+/// let model = try await loadModel(
 ///     from: #hubDownloader(),
 ///     using: #huggingFaceTokenizerLoader(),
 ///     configuration: modelConfiguration

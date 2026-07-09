@@ -63,15 +63,16 @@ public protocol ModelConfigurationValidating {
 
 /// Context of types that work together to provide a ``LanguageModel``.
 ///
-/// A ``ModelContext`` is created by ``GenericModelFactory/load(from:using:configuration:useLatest:progressHandler:)``.
+/// A ``ModelContext`` is `Sendable` and is created by ``loadModel(from:using:configuration:useLatest:progressHandler:)``
+/// or ``GenericModelFactory/load(from:using:configuration:useLatest:progressHandler:)``.
 /// This contains the following:
 ///
 /// - ``ModelConfiguration``: identifier for the model
-/// - ``LanguageModel``: the model itself, see ``generate(input:cache:parameters:context:wiredMemoryTicket:tools:)``
+/// - ``LanguageModel``: the model itself (wrapped in a `MaterializedModule`), see ``generate(input:cache:parameters:context:wiredMemoryTicket:tools:)``
 /// - ``UserInputProcessor``: can convert ``UserInput`` into ``LMInput``
 /// - `Tokenizer` -- the tokenizer used by ``UserInputProcessor``
 ///
-/// See also ``GenericModelFactory/loadContainer(from:using:configuration:useLatest:progressHandler:)`` and
+/// See also the deprecated ``GenericModelFactory/loadContainer(from:using:configuration:useLatest:progressHandler:)`` and
 /// ``ModelContainer``.
 public struct ModelContext: Sendable {
     public var configuration: ModelConfiguration
@@ -140,8 +141,9 @@ public protocol GenericModelFactory<ContextType, ContainerType>: Sendable {
     var modelRegistry: AbstractModelRegistry { get }
 
     /// load level load of a ``ResolvedModelConfiguration`` (urls) into a
-    /// ``ContextType``.  This is typically `struct` that holds the values
-    /// needed to run inference in the model and is _not_ `Sendable`.
+    /// ``ContextType``.  This is typically a `Sendable` `struct` that holds the
+    /// values needed to run inference in the model (for ``ModelContext`` the
+    /// model is wrapped in a `MaterializedModule`).
     func _load(
         configuration: ResolvedModelConfiguration,
         tokenizerLoader: any TokenizerLoader

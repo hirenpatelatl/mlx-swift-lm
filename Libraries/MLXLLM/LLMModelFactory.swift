@@ -19,7 +19,7 @@ private func create<C: Codable, M>(
 
 /// Registry of model type, e.g 'llama', to functions that can instantiate the model from configuration.
 ///
-/// Typically called via ``LLMModelFactory/loadContainer(from:using:configuration:useLatest:progressHandler:)``.
+/// Typically called via ``LLMModelFactory/load(from:using:configuration:useLatest:progressHandler:)``.
 public enum LLMTypeRegistry {
 
     /// Shared instance with default model types.
@@ -543,9 +543,12 @@ public final class LLMModelFactory: GenericModelFactory, TrainableModelContextLo
 
     // TODO dkoski
     /// Load a model from a ``Downloader`` and ``ModelConfiguration``,
-    /// producing a ``ModelContainer``.
+    /// producing a ``TrainableModelContext``.
     ///
-    /// Note: `ModelContext` is now `Sendable` and is preferred over `ModelContainer`.
+    /// Use this when the model needs to be mutated -- e.g. for training or
+    /// applying adapters (LoRA). The model inside a ``ModelContext`` is
+    /// materialized and sealed and cannot be modified; convert a trainable
+    /// context to an inference ``ModelContext`` via `ModelContext(_:)` when done.
     public func loadTrainable(
         from downloader: any Downloader,
         using tokenizerLoader: any TokenizerLoader,

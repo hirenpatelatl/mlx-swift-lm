@@ -14,8 +14,8 @@ import MLX
 ///
 /// Example usage:
 /// ```swift
-/// let main  = try await LLMModelFactory.shared.loadContainer(configuration: mainConfig)
-/// let draft = try await LLMModelFactory.shared.loadContainer(configuration: draftConfig)
+/// let main  = try await LLMModelFactory.shared.load(configuration: mainConfig)
+/// let draft = try await LLMModelFactory.shared.load(configuration: draftConfig)
 ///
 /// let session = ChatSession(
 ///     main,
@@ -33,7 +33,7 @@ import MLX
 ///         draftModelBytes: estimatedDraftBytes,
 ///         memoryPolicy: .recommendedWorkingSet
 ///     ) {
-///         try await LLMModelFactory.shared.loadContainer(configuration: draftConfig)
+///         try await LLMModelFactory.shared.load(configuration: draftConfig)
 ///     }
 /// )
 /// ```
@@ -123,8 +123,8 @@ public struct SpeculativeDecodingConfig: Sendable {
 /// For example:
 ///
 /// ```swift
-/// let modelContainer = try await loadModelContainer(id: "mlx-community/Qwen3-4B-4bit")
-/// let session = ChatSession(modelContainer)
+/// let model = try await loadModel(id: "mlx-community/Qwen3-4B-4bit")
+/// let session = ChatSession(model)
 /// print(try await session.respond(to: "What are two things to see in San Francisco?"))
 /// print(try await session.respond(to: "How about a great place to eat?"))
 /// ```
@@ -132,16 +132,16 @@ public struct SpeculativeDecodingConfig: Sendable {
 /// To enable speculative decoding for faster generation, pass a `SpeculativeDecodingConfig`:
 ///
 /// ```swift
-/// let draft = try await LLMModelFactory.shared.loadContainer(configuration: draftConfig)
+/// let draft = try await LLMModelFactory.shared.load(configuration: draftConfig)
 /// let session = ChatSession(
-///     modelContainer,
+///     model,
 ///     speculativeDecoding: SpeculativeDecodingConfig(draftModel: draft)
 /// )
 /// ```
 ///
 /// - Note: `ChatSession` is not thread-safe. Each session should be used from a single
-///   task/thread at a time. The underlying `ModelContainer` handles thread safety for
-///   model operations.
+///   task/thread at a time. The `ModelContext` it holds is `Sendable` (its model is a
+///   `MaterializedModule`), so it can be shared across sessions and tasks.
 public final class ChatSession {
 
     enum Cache {

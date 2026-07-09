@@ -332,7 +332,7 @@ private struct ParoQuantInputProcessor: UserInputProcessor {
 
 // MARK: - Load Entry Point
 
-/// Load a ParoQuant model from a local directory, returning a ``ModelContainer``.
+/// Load a ParoQuant model from a local directory, returning a ``ModelContext``.
 ///
 /// Handles AutoAWQ weight conversion, rotation layer patching, and IO layer
 /// quantization. Rotation parameters (theta, pairs, channel_scales) are kept
@@ -343,7 +343,7 @@ private struct ParoQuantInputProcessor: UserInputProcessor {
 ///   - typeRegistry: Registry used to create the underlying model architecture.
 ///   - tokenizerLoader: Loader for tokenizer.
 ///   - toolCallFormat: Optional tool-call format for the model configuration.
-/// - Returns: A ``ModelContainer`` ready for inference.
+/// - Returns: A ``ModelContext`` ready for inference.
 public func loadParoQuantModel<T: TrainableLanguageModel>(
     from directory: URL,
     typeRegistry: ModelTypeRegistry<T>,

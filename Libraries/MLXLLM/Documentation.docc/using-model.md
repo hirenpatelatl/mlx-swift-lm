@@ -19,13 +19,15 @@ let modelConfiguration: ModelConfiguration
 // e.g. TokenizersLoader() from MLXLMTokenizers
 let tokenizerLoader: any TokenizerLoader
 
-let container = try await modelFactory.loadContainer(
+let context = try await modelFactory.load(
     using: tokenizerLoader,
     configuration: modelConfiguration
 )
 ```
 
-The `container` provides an isolation context (an `actor`) to run inference in the model.
+The result is a `ModelContext` -- a `Sendable` struct whose `model` is wrapped in
+a `MaterializedModule` -- that you use directly. There is no actor or isolation
+wrapper to work through.
 
 Predefined `ModelConfiguration` instances are provided as static variables
 on the `ModelRegistry` types or they can be created:

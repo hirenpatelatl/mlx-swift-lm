@@ -124,7 +124,7 @@ public class EmbedderRegistry: AbstractModelRegistry, @unchecked Sendable {
 
 /// Context of values that work together to provide an ``EmbeddingModel``.
 ///
-/// This is created using a ``EmbedderModelFactory`.
+/// This is created using a ``EmbedderModelFactory``.
 public struct EmbedderModelContext: Sendable {
     public var configuration: ModelConfiguration
     public var model: any EmbeddingModel & Sendable
@@ -161,7 +161,7 @@ public struct EmbedderModelContext: Sendable {
 /// let downloader: any Downloader
 /// let tokenizerLoader: any TokenizerLoader
 /// let modelId = "mlx-community/gemma-3-1b-it-qat-4bit"
-/// let modelContainer = try await EmbedderModelFactory.shared.loadContainer(
+/// let modelContainer = try await EmbedderModelFactory.shared.load(
 ///     from: downloader, using: tokenizerLoader, configuration: .init(id: modelId),
 ///     progressHandler: logProgress(modelId)
 /// )
