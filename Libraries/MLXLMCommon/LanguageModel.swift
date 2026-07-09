@@ -304,6 +304,11 @@ extension LanguageModel where Self: KVCacheDimensionProvider {
     }
 }
 
+/// A mutable and trainable LanguageModel.
+///
+/// This is a `Module` so it can be fine tuned, e.g. with LoRA.  It is _not_ Sendable.
+///
+/// See also ``TrainableModelContext`` and ``ModelContext``.
 public typealias TrainableLanguageModel = LanguageModel & Module
 
 extension MaterializedModule: BaseLanguageModel where LayerType: BaseLanguageModel {

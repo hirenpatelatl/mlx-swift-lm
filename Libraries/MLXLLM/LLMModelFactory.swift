@@ -541,7 +541,6 @@ public final class LLMModelFactory: GenericModelFactory, TrainableModelContextLo
     /// registry of model id to configuration, e.g. `mlx-community/Llama-3.2-3B-Instruct-4bit`
     public let modelRegistry: AbstractModelRegistry
 
-    // TODO dkoski
     /// Load a model from a ``Downloader`` and ``ModelConfiguration``,
     /// producing a ``TrainableModelContext``.
     ///
@@ -571,6 +570,7 @@ public final class LLMModelFactory: GenericModelFactory, TrainableModelContextLo
         return ModelContext(trainable)
     }
 
+    /// internal load of a TrainableModelContext that can be converted into a ModelContext
     private func _loadTrainable(
         configuration: ResolvedModelConfiguration,
         tokenizerLoader: any TokenizerLoader

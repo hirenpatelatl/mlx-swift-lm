@@ -102,6 +102,13 @@ public struct ModelContext: Sendable {
     }
 }
 
+/// A version of ``ModelContext`` that holds a ``TrainableLanguageModel``.
+///
+/// This context contains the same properties as a `ModelContext` but the `model` is
+/// mutable and thus the context is _not_ `Sendable`.
+///
+/// Produced by ``loadTrainable(from:using:configuration:useLatest:progressHandler:)`` or the
+/// equivalent methods on `LLMModelFactory` and `VLMModelFactory`.
 public struct TrainableModelContext {
     public var configuration: ModelConfiguration
     public var model: any TrainableLanguageModel
@@ -460,7 +467,6 @@ public func loadModel(
     }
 }
 
-// TODO dkoski
 /// Load a model from a local directory of configuration and weights.
 ///
 /// Returns a ``TrainableModelContext`` holding the model and tokenizer
@@ -482,7 +488,6 @@ public func loadTrainable(
     }
 }
 
-// TODO dkoski
 /// Load a model given a model identifier, downloading via a ``Downloader``.
 ///
 /// Returns a ``TrainableModelContext`` holding the model and tokenizer

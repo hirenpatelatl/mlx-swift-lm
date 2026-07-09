@@ -108,7 +108,9 @@ public final class EmbedderModelContainer: @unchecked (Sendable) {
         message: "mutate EmbedderModelContext before passing to EmbedderModelContainer"
     )
     public func update(_ action: @Sendable (inout EmbedderModelContext) -> Void) async {
-        action(&context)
+        lock.withLock {
+            action(&_context)
+        }
     }
 
     // MARK: - Thread-safe convenience methods

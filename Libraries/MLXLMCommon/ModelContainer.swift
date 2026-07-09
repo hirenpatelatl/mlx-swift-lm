@@ -117,7 +117,9 @@ public final class ModelContainer: @unchecked (Sendable) {
         *, deprecated, message: "ModelContext is now Sendable -- hold that and mutate as needed"
     )
     public func update(_ action: @Sendable (inout ModelContext) -> Void) async {
-        action(&context)
+        lock.withLock {
+            action(&_context)
+        }
     }
 
     // MARK: - Thread-safe convenience methods

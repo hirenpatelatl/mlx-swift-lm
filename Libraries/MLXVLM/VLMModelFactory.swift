@@ -333,7 +333,6 @@ public final class VLMModelFactory: GenericModelFactory, TrainableModelContextLo
     /// registry of model id to configuration, e.g. `mlx-community/paligemma-3b-mix-448-8bit`
     public let modelRegistry: AbstractModelRegistry
 
-    // TODO dkoski
     /// Load a model from a ``Downloader`` and ``ModelConfiguration``,
     /// producing a ``TrainableModelContext``.
     ///
@@ -363,6 +362,7 @@ public final class VLMModelFactory: GenericModelFactory, TrainableModelContextLo
         return ModelContext(trainable)
     }
 
+    /// internal load of a TrainableModelContext that can be converted into a ModelContext
     private func _loadTrainable(
         configuration: ResolvedModelConfiguration,
         tokenizerLoader: any TokenizerLoader
