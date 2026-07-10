@@ -3,6 +3,7 @@
 import Foundation
 import MLX
 import MLXLMCommon
+import MLXNN
 import Testing
 
 @testable import MLXVLM
@@ -18,12 +19,96 @@ import Testing
 /// tail layers, and per-layer inputs.
 struct Gemma4ChunkedPrefillTests {
 
+    @Test("KV-shared VLM layers omit redundant K/V projections")
+    func kvSharedLayersOmitRedundantProjections() throws {
+        let parameterNames = try Device.withDefaultDevice(.cpu) {
+            let model = try Self.makeTinyModel()
+            return Set(model.parameters().flattened().map(\.0))
+        }
+
+        #expect(
+            parameterNames.contains("language_model.model.layers.3.self_attn.k_proj.weight"))
+        #expect(
+            parameterNames.contains("language_model.model.layers.3.self_attn.v_proj.weight"))
+
+        for layerIndex in 4 ... 5 {
+            #expect(
+                !parameterNames.contains(
+                    "language_model.model.layers.\(layerIndex).self_attn.k_proj.weight"
+                ))
+            #expect(
+                !parameterNames.contains(
+                    "language_model.model.layers.\(layerIndex).self_attn.v_proj.weight"
+                ))
+        }
+    }
+
+    @Test("Zero KV-shared layers retain every K/V projection")
+    func zeroKVSharedLayersRetainEveryProjection() throws {
+        let parameterNames = try Device.withDefaultDevice(.cpu) {
+            let model = try Self.makeTinyModel(numKVSharedLayers: 0)
+            return Set(model.parameters().flattened().map(\.0))
+        }
+
+        for layerIndex in 0 ..< 6 {
+            #expect(
+                parameterNames.contains(
+                    "language_model.model.layers.\(layerIndex).self_attn.k_proj.weight"
+                ))
+            #expect(
+                parameterNames.contains(
+                    "language_model.model.layers.\(layerIndex).self_attn.v_proj.weight"
+                ))
+        }
+    }
+
+    @Test("Sanitized PTQ-style shared-layer weights pass strict update")
+    func sanitizedSharedLayerWeightsPassStrictUpdate() throws {
+        try Device.withDefaultDevice(.cpu) {
+            let model = try Self.makeTinyModel()
+            var weights = Dictionary(uniqueKeysWithValues: model.parameters().flattened())
+
+            for (sharedLayer, sourceLayer) in [(4, 3), (5, 2)] {
+                for suffix in ["k_proj.weight", "v_proj.weight", "k_norm.weight"] {
+                    let source = "language_model.model.layers.\(sourceLayer).self_attn.\(suffix)"
+                    let shared = "language_model.model.layers.\(sharedLayer).self_attn.\(suffix)"
+                    precondition(weights[source] != nil, "Missing owner tensor \(source)")
+                    weights[shared] = weights[source]
+                }
+                for suffix in ["k_proj.scales", "k_proj.biases", "v_proj.scales", "v_proj.biases"] {
+                    let shared = "language_model.model.layers.\(sharedLayer).self_attn.\(suffix)"
+                    weights[shared] = MLXArray.ones([1])
+                }
+            }
+
+            let visionKeys = Set(weights.keys.filter { $0.hasPrefix("vision_tower.") })
+            let sanitized = model.sanitize(weights: weights)
+
+            for layerIndex in 4 ... 5 {
+                #expect(
+                    !sanitized.keys.contains {
+                        $0.hasPrefix("language_model.model.layers.\(layerIndex).self_attn.k_proj")
+                            || $0.hasPrefix(
+                                "language_model.model.layers.\(layerIndex).self_attn.v_proj")
+                            || $0.hasPrefix(
+                                "language_model.model.layers.\(layerIndex).self_attn.k_norm")
+                    })
+            }
+            #expect(Set(sanitized.keys.filter { $0.hasPrefix("vision_tower.") }) == visionKeys)
+
+            try model.update(
+                parameters: ModuleParameters.unflattened(sanitized),
+                verify: [.all]
+            )
+        }
+    }
+
     /// Tiny Gemma4 built from a sparse JSON config (all other fields take
     /// the decoder defaults). 6 text layers with sliding_window_pattern 3
     /// → [sliding, sliding, full, sliding, sliding, full]; the last 2 are
     /// KV-shared, so 4 caches (3 rotating + 1 standard). sliding_window 8
     /// is much smaller than the test prompt, forcing rotation.
-    private static func makeTinyModel() throws -> Gemma4 {
+    private static func makeTinyModel(numKVSharedLayers: Int = 2) throws -> Gemma4 {
         let json = """
             {
                 "text_config": {
@@ -36,7 +121,7 @@ struct Gemma4ChunkedPrefillTests {
                     "global_head_dim": 32,
                     "vocab_size": 200,
                     "vocab_size_per_layer_input": 200,
-                    "num_kv_shared_layers": 2,
+                    "num_kv_shared_layers": \(numKVSharedLayers),
                     "hidden_size_per_layer_input": 8,
                     "sliding_window": 8,
                     "sliding_window_pattern": 3,

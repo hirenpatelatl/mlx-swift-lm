@@ -1087,8 +1087,9 @@ final class Gemma4TextBackbone: Module {
         Gemma4RMSNormZeroShift?
 
     init(_ config: Gemma4TextConfiguration) {
+        let firstSharedLayerIndex = config.hiddenLayers - config.numKVSharedLayers
         self.config = config
-        self.firstKVSharedLayerIdx = config.hiddenLayers - config.numKVSharedLayers
+        self.firstKVSharedLayerIdx = firstSharedLayerIndex
         self.embedScale = pow(Float(config.hiddenSize), 0.5)
         self.embedTokensPerLayerScale = pow(Float(max(config.hiddenSizePerLayerInput, 1)), 0.5)
         self._perLayerInputScale = rsqrt(MLXArray(2.0))
@@ -1112,8 +1113,12 @@ final class Gemma4TextBackbone: Module {
 
         self._embedTokens.wrappedValue = Embedding(
             embeddingCount: config.vocabularySize, dimensions: config.hiddenSize)
-        self._layers.wrappedValue = (0 ..< config.hiddenLayers).map {
-            Gemma4TextDecoderLayer(config: config, layerIdx: $0)
+        self._layers.wrappedValue = (0 ..< config.hiddenLayers).map { layerIdx in
+            Gemma4TextDecoderLayer(
+                config: config,
+                layerIdx: layerIdx,
+                kvSharedOnly: layerIdx >= firstSharedLayerIndex && firstSharedLayerIndex > 0
+            )
         }
         self._norm.wrappedValue = Gemma4RMSNormZeroShift(
             dimensions: config.hiddenSize, eps: config.rmsNormEps)
