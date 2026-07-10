@@ -138,6 +138,23 @@ private final class LockIsolated<Value: Sendable>: @unchecked Sendable {
         #expect(resolved.tokenizerDirectory == localDir)
     }
 
+    @Test func resolvedConfigurationPreservesPagedWeightStrategy() {
+        let model = URL(fileURLWithPath: "/tmp/model")
+        let configuration = ModelConfiguration(
+            directory: model,
+            weightLoadingStrategy: .gemma4PagedPerLayerEmbedding(cacheRows: 64))
+
+        let resolved = configuration.resolved(modelDirectory: model, tokenizerDirectory: model)
+
+        #expect(resolved.weightLoadingStrategy == .gemma4PagedPerLayerEmbedding(cacheRows: 64))
+    }
+
+    @Test func residentWeightStrategyRemainsTheDefault() {
+        #expect(ModelConfiguration(id: "test/model").weightLoadingStrategy == .resident)
+        #expect(ResolvedModelConfiguration(directory: URL(fileURLWithPath: "/tmp/model"))
+            .weightLoadingStrategy == .resident)
+    }
+
     @Test func localDirectoryWithRemoteTokenizerSource() async throws {
         let downloader = MockDownloader()
         let localDir = URL(filePath: "/local/org/model")
