@@ -1085,6 +1085,7 @@ final class Gemma4TextBackbone: Module {
     @ModuleInfo(key: "per_layer_model_projection") var perLayerModelProjection: Linear?
     @ModuleInfo(key: "per_layer_projection_norm") var perLayerProjectionNorm:
         Gemma4RMSNormZeroShift?
+    var pagedPerLayerEmbedding: Gemma4PerLayerInputProviding?
 
     init(_ config: Gemma4TextConfiguration) {
         let firstSharedLayerIndex = config.hiddenLayers - config.numKVSharedLayers
@@ -1149,14 +1150,33 @@ final class Gemma4TextBackbone: Module {
         super.init()
     }
 
+    var usesPagedPerLayerEmbedding: Bool {
+        pagedPerLayerEmbedding != nil
+    }
+
+    func installPagedPerLayerEmbedding(_ provider: Gemma4PerLayerInputProviding) throws {
+        try update(
+            modules: ModuleChildren(values: ["embed_tokens_per_layer": .none]),
+            verify: .noUnusedKeys)
+        pagedPerLayerEmbedding = provider
+    }
+
     func getPerLayerInputs(_ inputIds: MLXArray) -> MLXArray {
-        guard let embedTokensPerLayer else {
-            fatalError("Per-layer inputs requested for a model without embed_tokens_per_layer")
-        }
         let validMask =
             logicalAnd(
                 inputIds .>= 0, inputIds .< config.vocabularySizePerLayerInput)
         let tokens = MLX.where(validMask, inputIds, MLXArray.zeros(like: inputIds))
+
+        if let pagedPerLayerEmbedding {
+            var result = pagedPerLayerEmbedding.values(for: tokens)
+            result = (result * MLXArray(embedTokensPerLayerScale, dtype: .float32)).asType(
+                result.dtype)
+            return result
+        }
+
+        guard let embedTokensPerLayer else {
+            fatalError("Per-layer inputs requested for a model without embed_tokens_per_layer")
+        }
         var result = embedTokensPerLayer(tokens)
         result = (result * MLXArray(embedTokensPerLayerScale, dtype: .float32)).asType(result.dtype)
         return result.reshaped(
@@ -1500,6 +1520,12 @@ final class Gemma4TextLanguageModel: Module, KVCacheDimensionProvider {
                         with: ".experts.switch_glu.up_proj.weight"
                     )
                 ] = value[.ellipsis, mid..., 0...]
+                continue
+            }
+
+            if model.usesPagedPerLayerEmbedding
+                && Gemma4PagedPerLayerEmbeddingTensorName.isExternalized(newKey)
+            {
                 continue
             }
 
