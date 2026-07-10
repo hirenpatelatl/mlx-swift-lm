@@ -302,7 +302,7 @@ let context = ModelContext(trainable)
 ```
 
 `loadTrainable(...)` is also available as a factory method
-(`factory.loadTrainable(...)`) and as the `#huggingFaceLoadTrainabledModel(...)`
+(`factory.loadTrainable(...)`) and as the `#huggingFaceLoadTrainableModel(...)`
 macro (note the spelling "Trainabled"). `TrainableModelContext` exposes
 `configuration`, `model` (`any TrainableLanguageModel`), `processor`, and
 `tokenizer`.

@@ -226,7 +226,7 @@ public struct LoadTrainableContextMacro: ExpressionMacro {
     ) throws -> ExprSyntax {
         guard let configuration = node.arguments.first?.expression else {
             throw MacroExpansionError.message(
-                "#huggingFaceLoadTrainabledModel requires a configuration")
+                "#huggingFaceLoadTrainableModel requires a configuration")
         }
 
         let progress: String

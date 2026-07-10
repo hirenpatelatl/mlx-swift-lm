@@ -144,14 +144,14 @@ public macro huggingFaceLoadModel(
 /// import HuggingFace
 /// import Tokenizers
 ///
-/// let modelContext = try await huggingFaceLoadTrainabledModel(
+/// let modelContext = try await huggingFaceLoadTrainableModel(
 ///     configuration: modelConfiguration
 /// ) { progres in ... }
 /// ```
 @freestanding(expression)
-public macro huggingFaceLoadTrainabledModel(
+public macro huggingFaceLoadTrainableModel(
     configuration: ModelConfiguration,
-    progressHandler: @Sendable @escaping (Progress) -> Void
+    progressHandler: @Sendable @escaping (Progress) -> Void = { _ in }
 ) -> TrainableModelContext =
     #externalMacro(module: "MLXHuggingFaceMacros", type: "LoadTrainableContextMacro")
 

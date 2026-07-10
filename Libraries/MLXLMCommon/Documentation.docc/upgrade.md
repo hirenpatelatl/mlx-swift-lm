@@ -315,7 +315,7 @@ For those use cases load a trainable model instead, which returns a mutable
 
 - free function `loadTrainable(...)`
 - `factory.loadTrainable(...)`
-- macro `#huggingFaceLoadTrainabledModel(configuration:progressHandler:)`
+- macro `#huggingFaceLoadTrainableModel(configuration:progressHandler:)`
 
 Once training is complete you can convert a `TrainableModelContext` into an
 inference `ModelContext` with `ModelContext(trainableContext)`.
