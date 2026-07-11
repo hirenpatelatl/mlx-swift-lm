@@ -395,9 +395,22 @@ public final class VLMModelFactory: GenericModelFactory {
             from: configuration.tokenizerDirectory)
         async let processorConfigTask = loadProcessorConfig(from: modelDirectory)
 
+        switch configuration.weightLoadingStrategy {
+        case .resident:
+            break
+        case .gemma4PagedPerLayerEmbedding(let cacheRows):
+            guard let gemma4 = model as? Gemma4 else {
+                throw ModelFactoryError.invalidConfiguration(
+                    "paged Gemma 4 weights requested for \(baseConfig.modelType)")
+            }
+            try gemma4.installPagedPerLayerEmbedding(
+                modelDirectory: modelDirectory, cacheRows: cacheRows)
+        }
+
         try loadWeights(
             modelDirectory: modelDirectory, model: model,
-            perLayerQuantization: baseConfig.perLayerQuantization)
+            perLayerQuantization: baseConfig.perLayerQuantization,
+            weightLoadingStrategy: configuration.weightLoadingStrategy)
 
         let tokenizer = try await tokenizerTask
         let processorConfigData: Data
@@ -439,7 +452,8 @@ public final class VLMModelFactory: GenericModelFactory {
             extraEOSTokens: mutableConfiguration.extraEOSTokens,
             stopStrings: mutableConfiguration.stopStrings,
             eosTokenIds: mutableConfiguration.eosTokenIds,
-            toolCallFormat: mutableConfiguration.toolCallFormat)
+            toolCallFormat: mutableConfiguration.toolCallFormat,
+            weightLoadingStrategy: configuration.weightLoadingStrategy)
 
         return .init(
             configuration: modelConfig, model: model, processor: processor,

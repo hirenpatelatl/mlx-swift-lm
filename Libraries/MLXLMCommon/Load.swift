@@ -4,6 +4,18 @@ import Foundation
 import MLX
 import MLXNN
 
+public struct WeightLoadingDiagnostics: Sendable, Codable, Equatable {
+    public let loadedTensorNames: [String]
+    public let evaluatedTensorNames: [String]
+    public let excludedTensorNames: [String]
+    public let loadedBytesByComponent: [String: UInt64]
+    public let evaluatedBytesByComponent: [String: UInt64]
+
+    public var evaluatedAudioBytes: UInt64 {
+        evaluatedBytesByComponent["audio"] ?? 0
+    }
+}
+
 /// Load model weights.
 ///
 /// This is typically called via ``GenericModelFactory/load(from:using:configuration:useLatest:progressHandler:)``.
@@ -14,16 +26,57 @@ import MLXNN
 public func loadWeights(
     modelDirectory: URL, model: BaseLanguageModel,
     quantization: BaseConfiguration.Quantization? = nil,
-    perLayerQuantization: BaseConfiguration.PerLayerQuantization? = nil
+    perLayerQuantization: BaseConfiguration.PerLayerQuantization? = nil,
+    weightLoadingStrategy: ModelWeightLoadingStrategy = .resident
 ) throws {
+    _ = try loadWeightsImpl(
+        modelDirectory: modelDirectory, model: model, quantization: quantization,
+        perLayerQuantization: perLayerQuantization,
+        weightLoadingStrategy: weightLoadingStrategy, collectDiagnostics: false)
+}
+
+/// Experiment-oriented loader entry point that preserves normal strict verification while
+/// returning tensor/component accounting for a single model materialization.
+public func loadWeightsForDiagnostics(
+    modelDirectory: URL, model: BaseLanguageModel,
+    quantization: BaseConfiguration.Quantization? = nil,
+    perLayerQuantization: BaseConfiguration.PerLayerQuantization? = nil,
+    weightLoadingStrategy: ModelWeightLoadingStrategy = .resident
+) throws -> WeightLoadingDiagnostics {
+    try loadWeightsImpl(
+        modelDirectory: modelDirectory, model: model, quantization: quantization,
+        perLayerQuantization: perLayerQuantization,
+        weightLoadingStrategy: weightLoadingStrategy, collectDiagnostics: true)!
+}
+
+private func loadWeightsImpl(
+    modelDirectory: URL, model: BaseLanguageModel,
+    quantization: BaseConfiguration.Quantization?,
+    perLayerQuantization: BaseConfiguration.PerLayerQuantization?,
+    weightLoadingStrategy: ModelWeightLoadingStrategy,
+    collectDiagnostics: Bool
+) throws -> WeightLoadingDiagnostics? {
     // load the weights and collect metadata from the first safetensor file
     var weights = [String: MLXArray]()
     var metadata = [String: String]()
+    var skippedNames = Set<String>()
     let enumerator = FileManager.default.enumerator(
         at: modelDirectory, includingPropertiesForKeys: nil)!
     for case let url as URL in enumerator {
         if url.pathExtension == "safetensors" {
-            let (w, m) = try loadArraysAndMetadata(url: url)
+            let w: [String: MLXArray]
+            let m: [String: String]
+            if case .resident = weightLoadingStrategy {
+                (w, m) = try loadArraysAndMetadata(url: url)
+            } else {
+                let store = try SafeTensorRowStore(url: url, allowedRoot: modelDirectory)
+                let excluded = Set(store.tensors.keys.filter {
+                    weightLoadingStrategy.isExternalizedTensor($0)
+                })
+                skippedNames.formUnion(excluded)
+                w = try store.loadArrays(excluding: excluded)
+                m = store.metadata
+            }
             for (key, value) in w {
                 weights[key] = value
             }
@@ -32,6 +85,9 @@ public func loadWeights(
             }
         }
     }
+
+    let loadedNames = collectDiagnostics ? weights.keys.sorted() : []
+    let loadedBytes = collectDiagnostics ? bytesByComponent(weights) : [:]
 
     // per-model cleanup (models can inspect metadata to customize behavior)
     weights = model.sanitize(weights: weights, metadata: metadata)
@@ -56,4 +112,35 @@ public func loadWeights(
     try model.update(parameters: parameters, verify: [.all])
 
     eval(model)
+
+    guard collectDiagnostics else { return nil }
+    let evaluatedNames = weights.keys.sorted()
+    return WeightLoadingDiagnostics(
+        loadedTensorNames: loadedNames,
+        evaluatedTensorNames: evaluatedNames,
+        excludedTensorNames: Array(
+            skippedNames.union(Set(loadedNames).subtracting(evaluatedNames))
+        ).sorted(),
+        loadedBytesByComponent: loadedBytes,
+        evaluatedBytesByComponent: bytesByComponent(weights))
+}
+
+private func bytesByComponent(_ weights: [String: MLXArray]) -> [String: UInt64] {
+    weights.reduce(into: [
+        "audio": 0,
+        "per_layer_embedding": 0,
+        "vision": 0,
+        "language_model": 0,
+        "other": 0,
+    ]) { result, entry in
+        result[weightComponent(entry.key), default: 0] += UInt64(entry.value.nbytes)
+    }
+}
+
+private func weightComponent(_ name: String) -> String {
+    if name.contains("audio") { return "audio" }
+    if name.contains("embed_tokens_per_layer") { return "per_layer_embedding" }
+    if name.contains("vision") { return "vision" }
+    if name.contains("language_model") { return "language_model" }
+    return "other"
 }

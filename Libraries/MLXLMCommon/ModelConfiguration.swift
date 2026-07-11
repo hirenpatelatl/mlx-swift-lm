@@ -2,6 +2,26 @@
 
 import Foundation
 
+public enum ModelWeightLoadingStrategy: Sendable, Equatable {
+    case resident
+    case gemma4PagedPerLayerEmbedding(cacheRows: Int = 512)
+
+    /// Names that must remain on disk for the selected loader to page them on demand.
+    /// The checkpoint prefix is normalized because some model exports include a
+    /// leading `model.` wrapper before sanitization.
+    public func isExternalizedTensor(_ name: String) -> Bool {
+        guard case .gemma4PagedPerLayerEmbedding = self else { return false }
+        let normalized = name.hasPrefix("model.")
+            ? String(name.dropFirst("model.".count))
+            : name
+        return [
+            "language_model.model.embed_tokens_per_layer.weight",
+            "language_model.model.embed_tokens_per_layer.scales",
+            "language_model.model.embed_tokens_per_layer.biases",
+        ].contains(normalized)
+    }
+}
+
 /// Configuration for a given model:  at least an org/name identifier or a directory with the model files.
 ///
 /// Optionally callers can provide some default values and overrides for:
@@ -118,6 +138,9 @@ public struct ModelConfiguration: Sendable {
     /// Tool call format for this model (nil = default JSON format)
     public var toolCallFormat: ToolCallFormat?
 
+    /// Opt-in weight materialization policy. Normal callers remain resident.
+    public var weightLoadingStrategy: ModelWeightLoadingStrategy
+
     public init(
         id: String, revision: String = "main",
         tokenizerSource: TokenizerSource? = nil,
@@ -125,7 +148,8 @@ public struct ModelConfiguration: Sendable {
         extraEOSTokens: Set<String> = [],
         stopStrings: Set<String>? = nil,
         eosTokenIds: Set<Int> = [],
-        toolCallFormat: ToolCallFormat? = nil
+        toolCallFormat: ToolCallFormat? = nil,
+        weightLoadingStrategy: ModelWeightLoadingStrategy = .resident
     ) {
         self.id = .id(id, revision: revision)
         self.tokenizerSource = tokenizerSource
@@ -134,6 +158,7 @@ public struct ModelConfiguration: Sendable {
         self.stopStrings = stopStrings
         self.eosTokenIds = eosTokenIds
         self.toolCallFormat = toolCallFormat
+        self.weightLoadingStrategy = weightLoadingStrategy
     }
 
     public init(
@@ -143,7 +168,8 @@ public struct ModelConfiguration: Sendable {
         extraEOSTokens: Set<String> = [],
         stopStrings: Set<String>? = nil,
         eosTokenIds: Set<Int> = [],
-        toolCallFormat: ToolCallFormat? = nil
+        toolCallFormat: ToolCallFormat? = nil,
+        weightLoadingStrategy: ModelWeightLoadingStrategy = .resident
     ) {
         self.id = .directory(directory)
         self.tokenizerSource = tokenizerSource
@@ -152,6 +178,7 @@ public struct ModelConfiguration: Sendable {
         self.stopStrings = stopStrings
         self.eosTokenIds = eosTokenIds
         self.toolCallFormat = toolCallFormat
+        self.weightLoadingStrategy = weightLoadingStrategy
     }
 
     /// Maps this configuration's behavioral properties into a
@@ -170,7 +197,8 @@ public struct ModelConfiguration: Sendable {
             extraEOSTokens: extraEOSTokens,
             stopStrings: stopStrings,
             eosTokenIds: eosTokenIds,
-            toolCallFormat: toolCallFormat)
+            toolCallFormat: toolCallFormat,
+            weightLoadingStrategy: weightLoadingStrategy)
     }
 
 }
