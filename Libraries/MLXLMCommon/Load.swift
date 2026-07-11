@@ -26,11 +26,13 @@ public struct WeightLoadingDiagnostics: Sendable, Codable, Equatable {
 public func loadWeights(
     modelDirectory: URL, model: BaseLanguageModel,
     quantization: BaseConfiguration.Quantization? = nil,
-    perLayerQuantization: BaseConfiguration.PerLayerQuantization? = nil
+    perLayerQuantization: BaseConfiguration.PerLayerQuantization? = nil,
+    weightLoadingStrategy: ModelWeightLoadingStrategy = .resident
 ) throws {
     _ = try loadWeightsImpl(
         modelDirectory: modelDirectory, model: model, quantization: quantization,
-        perLayerQuantization: perLayerQuantization, collectDiagnostics: false)
+        perLayerQuantization: perLayerQuantization,
+        weightLoadingStrategy: weightLoadingStrategy, collectDiagnostics: false)
 }
 
 /// Experiment-oriented loader entry point that preserves normal strict verification while
@@ -38,27 +40,43 @@ public func loadWeights(
 public func loadWeightsForDiagnostics(
     modelDirectory: URL, model: BaseLanguageModel,
     quantization: BaseConfiguration.Quantization? = nil,
-    perLayerQuantization: BaseConfiguration.PerLayerQuantization? = nil
+    perLayerQuantization: BaseConfiguration.PerLayerQuantization? = nil,
+    weightLoadingStrategy: ModelWeightLoadingStrategy = .resident
 ) throws -> WeightLoadingDiagnostics {
     try loadWeightsImpl(
         modelDirectory: modelDirectory, model: model, quantization: quantization,
-        perLayerQuantization: perLayerQuantization, collectDiagnostics: true)!
+        perLayerQuantization: perLayerQuantization,
+        weightLoadingStrategy: weightLoadingStrategy, collectDiagnostics: true)!
 }
 
 private func loadWeightsImpl(
     modelDirectory: URL, model: BaseLanguageModel,
     quantization: BaseConfiguration.Quantization?,
     perLayerQuantization: BaseConfiguration.PerLayerQuantization?,
+    weightLoadingStrategy: ModelWeightLoadingStrategy,
     collectDiagnostics: Bool
 ) throws -> WeightLoadingDiagnostics? {
     // load the weights and collect metadata from the first safetensor file
     var weights = [String: MLXArray]()
     var metadata = [String: String]()
+    var skippedNames = Set<String>()
     let enumerator = FileManager.default.enumerator(
         at: modelDirectory, includingPropertiesForKeys: nil)!
     for case let url as URL in enumerator {
         if url.pathExtension == "safetensors" {
-            let (w, m) = try loadArraysAndMetadata(url: url)
+            let w: [String: MLXArray]
+            let m: [String: String]
+            if case .resident = weightLoadingStrategy {
+                (w, m) = try loadArraysAndMetadata(url: url)
+            } else {
+                let store = try SafeTensorRowStore(url: url, allowedRoot: modelDirectory)
+                let excluded = Set(store.tensors.keys.filter {
+                    weightLoadingStrategy.isExternalizedTensor($0)
+                })
+                skippedNames.formUnion(excluded)
+                w = try store.loadArrays(excluding: excluded)
+                m = store.metadata
+            }
             for (key, value) in w {
                 weights[key] = value
             }
@@ -100,7 +118,9 @@ private func loadWeightsImpl(
     return WeightLoadingDiagnostics(
         loadedTensorNames: loadedNames,
         evaluatedTensorNames: evaluatedNames,
-        excludedTensorNames: Array(Set(loadedNames).subtracting(evaluatedNames)).sorted(),
+        excludedTensorNames: Array(
+            skippedNames.union(Set(loadedNames).subtracting(evaluatedNames))
+        ).sorted(),
         loadedBytesByComponent: loadedBytes,
         evaluatedBytesByComponent: bytesByComponent(weights))
 }

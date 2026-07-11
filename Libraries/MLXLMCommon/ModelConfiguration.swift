@@ -5,6 +5,21 @@ import Foundation
 public enum ModelWeightLoadingStrategy: Sendable, Equatable {
     case resident
     case gemma4PagedPerLayerEmbedding(cacheRows: Int = 512)
+
+    /// Names that must remain on disk for the selected loader to page them on demand.
+    /// The checkpoint prefix is normalized because some model exports include a
+    /// leading `model.` wrapper before sanitization.
+    public func isExternalizedTensor(_ name: String) -> Bool {
+        guard case .gemma4PagedPerLayerEmbedding = self else { return false }
+        let normalized = name.hasPrefix("model.")
+            ? String(name.dropFirst("model.".count))
+            : name
+        return [
+            "language_model.model.embed_tokens_per_layer.weight",
+            "language_model.model.embed_tokens_per_layer.scales",
+            "language_model.model.embed_tokens_per_layer.biases",
+        ].contains(normalized)
+    }
 }
 
 /// Configuration for a given model:  at least an org/name identifier or a directory with the model files.

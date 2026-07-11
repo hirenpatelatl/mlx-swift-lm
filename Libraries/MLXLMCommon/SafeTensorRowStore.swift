@@ -2,6 +2,7 @@
 
 import Darwin
 import Foundation
+import MLX
 
 private let maximumSafeTensorHeaderByteCount: UInt64 = 100_000_000
 
@@ -71,6 +72,7 @@ public final class SafeTensorRowStore: @unchecked Sendable {
     public let url: URL
     public let root: URL
     public let tensors: [String: SafeTensorRowStoreTensor]
+    public let metadata: [String: String]
 
     private let fd: Int32
     private let lock = NSLock()
@@ -103,6 +105,7 @@ public final class SafeTensorRowStore: @unchecked Sendable {
             self.fd = opened
             let index = try Self.readIndex(fd: opened, url: resolvedURL)
             self.tensors = index.tensors
+            self.metadata = index.metadata
             self.mutableMetrics.byteCount = index.metadataByteCount
             self.mutableMetrics.largestRead = index.largestMetadataRead
             self.mutableMetrics.metadataByteCount = index.metadataByteCount
@@ -134,6 +137,23 @@ public final class SafeTensorRowStore: @unchecked Sendable {
         let offset = try checkedAdd(tensor.dataStart, rowOffset, "absolute row offset")
         _ = try checkedOffT(offset, byteCount: tensor.rowByteCount, label: name)
         return try readExactly(tensor: name, offset: offset, byteCount: tensor.rowByteCount)
+    }
+
+    public func readTensor(_ name: String) throws -> Data {
+        let tensor = try tensor(named: name)
+        return try readExactly(
+            tensor: name, offset: tensor.dataStart, byteCount: Int(tensor.byteCount))
+    }
+
+    /// Materialize selected tensors without asking MLX to load the entire file.
+    /// This is used by strategy-aware loaders to leave externalized tensors on disk.
+    public func loadArrays(excluding excludedNames: Set<String> = []) throws -> [String: MLXArray] {
+        try tensors.values.sorted { $0.name < $1.name }.reduce(into: [:]) { result, tensor in
+            guard !excludedNames.contains(tensor.name) else { return }
+            let data = try readTensor(tensor.name)
+            result[tensor.name] = MLXArray(
+                data, tensor.shape, dtype: try Self.mlxdType(for: tensor.dtype))
+        }
     }
 
     public func recordCacheHit() {
@@ -169,6 +189,7 @@ public final class SafeTensorRowStore: @unchecked Sendable {
 
     private struct IndexResult {
         let tensors: [String: SafeTensorRowStoreTensor]
+        let metadata: [String: String]
         let metadataByteCount: UInt64
         let largestMetadataRead: Int
     }
@@ -199,6 +220,14 @@ public final class SafeTensorRowStore: @unchecked Sendable {
         }
 
         var tensors: [String: SafeTensorRowStoreTensor] = [:]
+        var metadata: [String: String] = [:]
+        if let rawMetadata = object["__metadata__"] as? [String: Any] {
+            for (key, value) in rawMetadata {
+                if let value = value as? String {
+                    metadata[key] = value
+                }
+            }
+        }
         for (name, value) in object where name != "__metadata__" {
             guard let metadata = value as? [String: Any] else {
                 throw SafeTensorRowStoreError.malformedTensor("\(name) metadata is not an object")
@@ -262,6 +291,7 @@ public final class SafeTensorRowStore: @unchecked Sendable {
         }
         return IndexResult(
             tensors: tensors,
+            metadata: metadata,
             metadataByteCount: try checkedAdd(8, headerLength, "metadata byte count"),
             largestMetadataRead: max(8, Int(headerLength)))
     }
@@ -287,6 +317,25 @@ public final class SafeTensorRowStore: @unchecked Sendable {
             return value.intValue
         }
         return nil
+    }
+
+    private static func mlxdType(for dtype: String) throws -> DType {
+        switch dtype {
+        case "BOOL": .bool
+        case "U8": .uint8
+        case "U16": .uint16
+        case "U32": .uint32
+        case "U64": .uint64
+        case "I8": .int8
+        case "I16": .int16
+        case "I32": .int32
+        case "I64": .int64
+        case "F16": .float16
+        case "BF16": .bfloat16
+        case "F32": .float32
+        case "F64": .float64
+        default: throw SafeTensorRowStoreError.unsupportedDType(dtype)
+        }
     }
 }
 

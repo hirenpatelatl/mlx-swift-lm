@@ -155,6 +155,15 @@ private final class LockIsolated<Value: Sendable>: @unchecked Sendable {
             .weightLoadingStrategy == .resident)
     }
 
+    @Test func pagedStrategyIdentifiesOnlyExternalizedGemmaTensors() {
+        let strategy = ModelWeightLoadingStrategy.gemma4PagedPerLayerEmbedding()
+        #expect(strategy.isExternalizedTensor(
+            "language_model.model.embed_tokens_per_layer.weight"))
+        #expect(strategy.isExternalizedTensor(
+            "model.language_model.model.embed_tokens_per_layer.scales"))
+        #expect(!strategy.isExternalizedTensor("language_model.model.embed_tokens.weight"))
+    }
+
     @Test func localDirectoryWithRemoteTokenizerSource() async throws {
         let downloader = MockDownloader()
         let localDir = URL(filePath: "/local/org/model")
