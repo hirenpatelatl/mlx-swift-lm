@@ -65,6 +65,10 @@ func runOne(
     let baseConfig = try JSONDecoder.json5().decode(BaseConfiguration.self, from: configData)
     let config = try JSONDecoder.json5().decode(Gemma4Configuration.self, from: configData)
     let model = Gemma4(config)
+    let weightLoadingStrategy: ModelWeightLoadingStrategy =
+        mode == "paged"
+        ? .gemma4PagedPerLayerEmbedding(cacheRows: cacheRows)
+        : .resident
     if mode == "paged" {
         try model.installPagedPerLayerEmbedding(
             modelDirectory: modelDirectory, cacheRows: cacheRows)
@@ -74,7 +78,8 @@ func runOne(
     let diagnostics = try loadWeightsForDiagnostics(
         modelDirectory: modelDirectory,
         model: model,
-        perLayerQuantization: baseConfig.perLayerQuantization)
+        perLayerQuantization: baseConfig.perLayerQuantization,
+        weightLoadingStrategy: weightLoadingStrategy)
     let loaded = Date()
 
     let tokenizer = try PinnedGemma4Tokenizer(modelDirectory: modelDirectory)
@@ -88,7 +93,8 @@ func runOne(
             directory: modelDirectory,
             defaultPrompt: colorPrompt,
             extraEOSTokens: ["<turn|>"],
-            eosTokenIds: [1, 50, 106]),
+            eosTokenIds: [1, 50, 106],
+            weightLoadingStrategy: weightLoadingStrategy),
         model: model,
         processor: processor,
         tokenizer: tokenizer)
@@ -149,6 +155,19 @@ func runOne(
     }
     guard diagnostics.evaluatedAudioBytes == 0 else {
         throw SandboxError.comparisonFailed("audio tensors were evaluated")
+    }
+    if mode == "paged" {
+        guard diagnostics.loadedBytesByComponent["per_layer_embedding"] == 0,
+            diagnostics.excludedTensorNames.contains(
+                "language_model.model.embed_tokens_per_layer.weight"),
+            diagnostics.excludedTensorNames.contains(
+                "language_model.model.embed_tokens_per_layer.scales"),
+            diagnostics.excludedTensorNames.contains(
+                "language_model.model.embed_tokens_per_layer.biases")
+        else {
+            throw SandboxError.comparisonFailed(
+                "paged loader materialized externalized per-layer tensors")
+        }
     }
     if let metrics {
         guard metrics.rowStore.rowDataByteCount <= metrics.rowStore.rowMisses * 5_040,
